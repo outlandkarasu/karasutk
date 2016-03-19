@@ -3,3 +3,9 @@ description "KarasuTk is KAkkoi (cool) RAku (easy) SUgoi (awesome) library for D
 copyright "Copyright © 2016, outland.karasu"
 authors "outland.karasu@gmail.com"
 license "BSL-1.0"
+
+targetType "library"
+
+dependency "derelict-sdl2" version="2.0.0"
+dependency "derelict-gl3" version="1.0.18"
+dependency "gl3n" version="1.3.1"
