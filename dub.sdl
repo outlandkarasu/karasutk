@@ -1,0 +1,5 @@
+name "karasutk"
+description "KarasuTk is KAkkoi (cool) RAku (easy) SUgoi (awesome) library for D language."
+copyright "Copyright © 2016, outland.karasu"
+authors "outland.karasu@gmail.com"
+license "BSL-1.0"
