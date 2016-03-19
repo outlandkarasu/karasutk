@@ -4,5 +4,4 @@ __dummy.html
 *.o
 *.obj
 libkarasutk.a
-dub.selections.json
 
