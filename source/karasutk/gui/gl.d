@@ -12,7 +12,7 @@ import std.stdio : writefln;
 import derelict.opengl3.gl3;
 
 /// OpenGL related exception.
-class GLException : Exception {
+class GlException : Exception {
     @nogc @safe pure nothrow this(string msg, string file = __FILE__, size_t line = __LINE__, Throwable next = null) {
         super(msg, file, line, next);
     }
@@ -22,14 +22,14 @@ class GLException : Exception {
 }
 
 /// error check for OpenGL
-void checkGLError(string file = __FILE__, size_t line = __LINE__) {
+void checkGlError(string file = __FILE__, size_t line = __LINE__) {
     GLenum[] errors;
     for(GLenum error; (error = glGetError()) != GL_NO_ERROR;) {
         errors ~= error;
     }
 
     if(errors.length > 0) {
-        throw new GLException(format("%s", errors), file, line);
+        throw new GlException(format("%s", errors), file, line);
     }
 }
 

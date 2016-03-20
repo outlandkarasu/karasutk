@@ -12,6 +12,8 @@ import std.container : Array;
 import derelict.opengl3.gl3;
 import gl3n.linalg : vec3;
 
+import karasutk.gui.gl : checkGlError;
+
 /// number for mesh coordinate
 alias Number = float;
 
@@ -93,6 +95,8 @@ class SdlMesh : Mesh {
                 &vertexBuffer_[0],
                 GL_STATIC_DRAW);
 
+        checkGlError();
+
         // transfer indicies data
         glGenVertexArrays(1, &vertexArrayId_);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vertexArrayId_);
@@ -103,6 +107,8 @@ class SdlMesh : Mesh {
                 vertexArray_.length * size_t.sizeof,
                 &vertexArray_[0],
                 GL_STATIC_DRAW);
+
+        checkGlError();
 
         vertexArraySize_ = cast(uint) vertexArray_.length;
     }
@@ -131,6 +137,7 @@ class SdlMesh : Mesh {
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vertexArrayId_);
         scope(exit) glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
         glDrawElements(this.glType, vertexArraySize_, GL_UNSIGNED_INT, null);
+        checkGlError();
     }
 
 private:

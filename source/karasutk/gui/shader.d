@@ -7,7 +7,7 @@
 
 module karasutk.gui.shader;
 
-import karasutk.gui.gl : GLException;
+import karasutk.gui.gl : GlException;
 
 import derelict.opengl3.gl3;
 
@@ -142,7 +142,7 @@ void throwIfShaderError(alias getter, alias getLog, GLenum TYPE)(GLuint id) {
 
         GLsizei size;
         getLog(id, logLength, &size, message.ptr);
-        throw new GLException(message[0 .. size].idup);
+        throw new GlException(message[0 .. size].idup);
     }
 }
 
