@@ -54,7 +54,7 @@ interface MeshBuilder {
     Mesh buildPoints(void delegate(VertexAppender, PointAppender) dg);
 }
 
-private:
+package:
 
 class SdlMeshBuilder : MeshBuilder {
 
@@ -78,9 +78,11 @@ class SdlMesh : Mesh {
     }
 
     void transferToGpu() {
+        // release old data
         releaseFromGpu();
         scope(failure) releaseFromGpu();
 
+        // transfer vertices data
         glGenBuffers(1, &vertexBufferId_);
         glBindBuffer(GL_ARRAY_BUFFER, vertexBufferId_);
         scope(exit) glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -91,6 +93,7 @@ class SdlMesh : Mesh {
                 &vertexBuffer_[0],
                 GL_STATIC_DRAW);
 
+        // transfer indicies data
         glGenVertexArrays(1, &vertexArrayId_);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vertexArrayId_);
         scope(exit) glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
@@ -100,6 +103,7 @@ class SdlMesh : Mesh {
                 vertexArray_.length * size_t.sizeof,
                 &vertexArray_[0],
                 GL_STATIC_DRAW);
+
         vertexArraySize_ = cast(uint) vertexArray_.length;
     }
 
@@ -116,12 +120,14 @@ class SdlMesh : Mesh {
     }
 
     void draw() {
+        // bind and enable vertices
         glBindVertexArray(vertexArrayId_);
         scope(exit) glBindVertexArray(0);
 
         enable(VertexAttribute.Position, vertexBufferId_, 3, GL_FLOAT);
         scope(exit) glDisableVertexAttribArray(VertexAttribute.Position);
 
+        // draw indicies
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vertexArrayId_);
         scope(exit) glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
         glDrawElements(this.glType, vertexArraySize_, GL_UNSIGNED_INT, null);
@@ -129,10 +135,12 @@ class SdlMesh : Mesh {
 
 private:
 
+    // vertex attribute index
     enum VertexAttribute : GLuint {
         Position
     }
 
+    // FaceTopology to GLenum
     @property GLenum glType() @safe pure nothrow @nogc const {
         final switch(topology_) {
         case FaceTopology.POINTS:
@@ -145,7 +153,6 @@ private:
     }
 
     void addVertex(Number x, Number y, Number z) {vertexBuffer_ ~= vec3(x, y, z);}
-
     void addIndex(uint i) {vertexArray_ ~= i;}
 
     void enable(

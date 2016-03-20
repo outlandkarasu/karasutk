@@ -1,4 +1,6 @@
 /**
+ *  main functions for GUI application
+ *
  *  Authors: outland.karasu
  *  License: BSL-1.0
  */
@@ -13,6 +15,9 @@ import derelict.opengl3.gl3 : DerelictGL3;
 
 import karasutk.dbg : dwritefln;
 import karasutk.gui.sdl : enforceSDL;
+import karasutk.gui.application;
+import karasutk.gui.event;
+import karasutk.gui.mesh;
 
 /**
  *  GUI option structure.
@@ -36,7 +41,7 @@ struct GuiOptions {
 }
 
 /// check for main function.
-enum isMainFunction(F) = isCallable!F && isImplicitlyConvertible!(EventQueue, Parameters!F[0]);
+enum isMainFunction(F) = isCallable!F && isImplicitlyConvertible!(Application, Parameters!F[0]);
 
 /**
  *  Run a dg during GUI.
@@ -77,84 +82,10 @@ void doGuiMain(F)(ref const(GuiOptions) options, F mainFunction) if(isMainFuncti
     DerelictGL3.reload();
     dwritefln("OpenGL version: %s", DerelictGL3.loadedVersion);
 
-    auto eventQueue = new SDLEventQueue();
-
-    mainFunction(eventQueue);
-}
-
-/// event queue status result
-enum EventResult {
-    QUIT = -1,
-    EMPTY = 0,
-    NOT_EMPTY,
-}
-
-@safe pure nothrow @nogc {
-    bool isQuit(EventResult r) {return r == EventResult.QUIT;}
-    bool isEmpty(EventResult r) {return r == EventResult.EMPTY;}
-    bool isNotEmpty(EventResult r) {return r == EventResult.NOT_EMPTY;}
-}
-
-/// event handler type
-alias EventHandler(E) = void delegate(ref const(E) event);
-
-/// check event handler type
-enum isEventHandlable(H, E)
-    = isCallable!H && isImplicitlyConvertible!(const(E), Parameters!H[0]);
-
-/// generic functions to EventHandler
-auto toEventHandler(E, F)(F f) @safe if(isEventHandlable!(F, E)) {
-    return delegate void(ref const(E) e) {f(e);};
-}
-
-/// application quit event structure.
-struct QuitEvent {
-}
-
-/// Key down up event structure
-struct KeyEvent {
-
-    /// event type
-    alias Type = int;
-
-    /// key code type
-    alias Code = uint;
-
-    enum : Type {
-        UP,
-        DOWN,
-    }
-
-    Type type;
-    Code code;
-}
-
-/// GUI event queue 
-abstract class EventQueue {
-
-    /**
-     *  process a queued event.
-     *
-     *  Returns:
-     *      queue status
-     */
-    abstract EventResult process() @system;
-
-    @property void onKey(F)(F f) @safe if(isEventHandlable!(F, KeyEvent)) {
-        keyEvent_ = toEventHandler!KeyEvent(f);
-    }
-
-    @property void onQuit(F)(F f) @safe if(isEventHandlable!(F, QuitEvent)) {
-        quitEvent_ = toEventHandler!KeyEvent(f);
-    }
-
-private:
-
-    void dispatchKeyEvent(KeyEvent event) {if(keyEvent_) {keyEvent_(event);}}
-    EventHandler!KeyEvent keyEvent_;
-
-    void dispatchQuitEvent(QuitEvent event) {if(quitEvent_) {quitEvent_(event);}}
-    EventHandler!QuitEvent quitEvent_;
+    auto app = Application(
+            new SdlEventQueue(),
+            new SdlMeshBuilder());
+    mainFunction(app);
 }
 
 private:
@@ -170,31 +101,5 @@ SDL_WindowFlags windowFlags(ref const(GuiOptions) options) @safe pure nothrow @n
     if(options.fullScreen) flags |= SDL_WINDOW_FULLSCREEN;
     if(options.fullScreenDesktop) flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
     return flags;
-}
-
-class SDLEventQueue : EventQueue {
-
-    override EventResult process() @system {
-        SDL_Event event;
-        if(!SDL_PollEvent(&event)) {
-            return EventResult.EMPTY;
-        }
-
-        switch(event.type) {
-        case SDL_KEYDOWN:
-            dispatchKeyEvent(KeyEvent(KeyEvent.DOWN, event.key.keysym.sym));
-            break;
-        case SDL_KEYUP:
-            dispatchKeyEvent(KeyEvent(KeyEvent.UP, event.key.keysym.sym));
-            break;
-        case SDL_QUIT:
-            dispatchQuitEvent(QuitEvent());
-            return EventResult.QUIT;
-        default:
-            break;
-        }
-
-        return EventResult.NOT_EMPTY;
-    }
 }
 
