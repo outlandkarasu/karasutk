@@ -29,7 +29,7 @@ interface Mesh {
     void transferToGpu();
 
     /// release data from GPU.
-    void releaseFromGpu() nothrow;
+    void releaseFromGpu() @nogc nothrow;
 
     /// draw to display
     void draw() const;
@@ -51,7 +51,7 @@ interface MeshFactory {
     alias void delegate(uint, uint, uint) TriangleAppender;
 
     /// add points by user delegate.
-    Mesh buildPoints(void delegate(VertexAppender, PointAppender) dg);
+    Mesh makePoints(void delegate(VertexAppender, PointAppender) dg);
 }
 
 package:
@@ -59,7 +59,7 @@ package:
 class SdlMeshFactory : MeshFactory {
 
     /// add points by user delegate.
-    Mesh buildPoints(void delegate(VertexAppender, PointAppender) dg) {
+    Mesh makePoints(void delegate(VertexAppender, PointAppender) dg) {
         auto mesh = new SdlMesh(Mesh.FaceTopology.POINTS);
         dg(&mesh.addVertex, &mesh.addIndex);
         return mesh;
@@ -71,7 +71,7 @@ class SdlMesh : Mesh {
 
     this(FaceTopology topology) {this.topology_ = topology;}
 
-    ~this() {
+    ~this() @nogc nothrow {
         releaseFromGpu();
         vertexBuffer_.clear();
         vertexArray_.clear();

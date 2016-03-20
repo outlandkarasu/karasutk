@@ -33,15 +33,15 @@ interface Shader {
 /// shader factory 
 interface ShaderFactory {
 
-    /// compile from source
-    Shader compile(const(ShaderSource) source);
+    /// make from source
+    Shader makeShader(const(ShaderSource) source);
 }
 
 package:
 
 class SdlShaderFactory : ShaderFactory {
 
-    Shader compile(const(ShaderSource) source) {
+    Shader makeShader(const(ShaderSource) source) {
         return new SdlShader(source);
     }
 }
@@ -54,6 +54,10 @@ class SdlShader : Shader {
         this.source_ = source;
     }
 
+    ~this() @nogc nothrow {
+        releaseFromGpu();
+    }
+
     /// transfer data to GPU.
     void transferToGpu() {
         // release old program
@@ -63,7 +67,7 @@ class SdlShader : Shader {
     }
 
     /// release data from GPU.
-    void releaseFromGpu() {
+    void releaseFromGpu() @nogc nothrow {
         if(programId_) {
             glDeleteProgram(programId_);
             programId_ = 0;

@@ -82,9 +82,7 @@ void doGuiMain(F)(ref const(GuiOptions) options, F mainFunction) if(isMainFuncti
     DerelictGL3.reload();
     dwritefln("OpenGL version: %s", DerelictGL3.loadedVersion);
 
-    auto app = Application(
-            new SdlEventQueue(),
-            new SdlMeshFactory());
+    auto app = new SdlApplication(window);
     mainFunction(app);
 }
 
