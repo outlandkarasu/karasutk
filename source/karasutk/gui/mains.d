@@ -84,7 +84,7 @@ void doGuiMain(F)(ref const(GuiOptions) options, F mainFunction) if(isMainFuncti
 
     auto app = Application(
             new SdlEventQueue(),
-            new SdlMeshBuilder());
+            new SdlMeshFactory());
     mainFunction(app);
 }
 

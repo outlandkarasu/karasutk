@@ -16,11 +16,11 @@ struct Application {
 
     @property @safe pure nothrow @nogc {
         EventQueue eventQueue() {return eventQueue_;}
-        MeshBuilder meshBuilder() {return meshBuilder_;}
+        MeshFactory meshFactory() {return meshFactory_;}
     }
 
 private:
     EventQueue eventQueue_;
-    MeshBuilder meshBuilder_;
+    MeshFactory meshFactory_;
 }
 

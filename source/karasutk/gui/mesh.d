@@ -29,14 +29,14 @@ interface Mesh {
     void transferToGpu();
 
     /// release data from GPU.
-    void releaseFromGpu();
+    void releaseFromGpu() nothrow;
 
     /// draw to display
-    void draw();
+    void draw() const;
 }
 
-/// Mesh builder class.
-interface MeshBuilder {
+/// Mesh factory interface.
+interface MeshFactory {
 
     /// vertices appender function.
     alias void delegate(Number, Number, Number) VertexAppender;
@@ -56,7 +56,7 @@ interface MeshBuilder {
 
 package:
 
-class SdlMeshBuilder : MeshBuilder {
+class SdlMeshFactory : MeshFactory {
 
     /// add points by user delegate.
     Mesh buildPoints(void delegate(VertexAppender, PointAppender) dg) {
@@ -107,7 +107,7 @@ class SdlMesh : Mesh {
         vertexArraySize_ = cast(uint) vertexArray_.length;
     }
 
-    void releaseFromGpu() {
+    void releaseFromGpu() nothrow {
         if(vertexBufferId_) {
             glDeleteBuffers(1, &vertexBufferId_);
             vertexBufferId_ = 0;
@@ -119,7 +119,7 @@ class SdlMesh : Mesh {
         vertexArraySize_ = 0;
     }
 
-    void draw() {
+    void draw() const {
         // bind and enable vertices
         glBindVertexArray(vertexArrayId_);
         scope(exit) glBindVertexArray(0);
