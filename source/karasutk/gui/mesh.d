@@ -10,7 +10,6 @@ module karasutk.gui.mesh;
 import std.container : Array;
 
 import derelict.opengl3.gl3;
-import gl3n.linalg : vec3;
 
 import karasutk.gui.gl : checkGlError;
 
@@ -54,6 +53,12 @@ interface MeshFactory {
 
     /// add points by user delegate.
     Mesh makePoints(void delegate(VertexAppender, PointAppender) dg);
+
+    /// add lines by user delegate.
+    Mesh makeLines(void delegate(VertexAppender, LineAppender) dg);
+
+    /// add triangles by user delegate.
+    Mesh makeTriangles(void delegate(VertexAppender, TriangleAppender) dg);
 }
 
 package:
@@ -66,6 +71,29 @@ class SdlMeshFactory : MeshFactory {
         dg(&mesh.addVertex, &mesh.addIndex);
         return mesh;
     }
+
+    /// add lines by user delegate.
+    Mesh makeLines(void delegate(VertexAppender, LineAppender) dg) {
+        auto mesh = new SdlMesh(Mesh.FaceTopology.LINES);
+        void addLine(uint p1, uint p2) {
+            mesh.addIndex(p1);
+            mesh.addIndex(p2);
+        }
+        dg(&mesh.addVertex, &addLine);
+        return mesh;
+    }
+
+    /// add triangles by user delegate.
+    Mesh makeTriangles(void delegate(VertexAppender, TriangleAppender) dg) {
+        auto mesh = new SdlMesh(Mesh.FaceTopology.TRIANGLES);
+        void addTriangle(uint p1, uint p2, uint p3) {
+            mesh.addIndex(p1);
+            mesh.addIndex(p2);
+            mesh.addIndex(p3);
+        }
+        dg(&mesh.addVertex, &addTriangle);
+        return mesh;
+    }
 }
 
 /// mesh class for SDL
@@ -75,8 +103,8 @@ class SdlMesh : Mesh {
 
     ~this() @nogc nothrow {
         releaseFromGpu();
-        vertexBuffer_.clear();
-        vertexArray_.clear();
+        vertexArrayBuffer_.clear();
+        indexElementArrayBuffer_.clear();
     }
 
     void transferToGpu() {
@@ -84,60 +112,62 @@ class SdlMesh : Mesh {
         releaseFromGpu();
         scope(failure) releaseFromGpu();
 
+        glGenVertexArrays(1, &vertexArrayId_);
+        glBindVertexArray(vertexArrayId_);
+        scope(exit) glBindVertexArray(0);
+
         // transfer vertices data
-        glGenBuffers(1, &vertexBufferId_);
-        glBindBuffer(GL_ARRAY_BUFFER, vertexBufferId_);
+        glGenBuffers(1, &vertexArrayBufferId_);
+        glBindBuffer(GL_ARRAY_BUFFER, vertexArrayBufferId_);
         scope(exit) glBindBuffer(GL_ARRAY_BUFFER, 0);
 
         glBufferData(
                 GL_ARRAY_BUFFER,
-                vertexBuffer_.length * vec3.sizeof,
-                &vertexBuffer_[0],
+                vertexArrayBuffer_.length * Number.sizeof,
+                &vertexArrayBuffer_[0],
                 GL_STATIC_DRAW);
 
-        checkGlError();
+        // bind and enable vertices
+        enable(VertexAttribute.Position, vertexArrayBufferId_, 3, GL_FLOAT);
 
         // transfer indicies data
-        glGenVertexArrays(1, &vertexArrayId_);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vertexArrayId_);
+        glGenBuffers(1, &indexElementArrayBufferId_);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexElementArrayBufferId_);
         scope(exit) glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
         glBufferData(
                 GL_ELEMENT_ARRAY_BUFFER,
-                vertexArray_.length * size_t.sizeof,
-                &vertexArray_[0],
+                indexElementArrayBuffer_.length * uint.sizeof,
+                &indexElementArrayBuffer_[0],
                 GL_STATIC_DRAW);
-
-        checkGlError();
-
-        vertexArraySize_ = cast(uint) vertexArray_.length;
     }
 
     void releaseFromGpu() nothrow {
-        if(vertexBufferId_) {
-            glDeleteBuffers(1, &vertexBufferId_);
-            vertexBufferId_ = 0;
+        if(vertexArrayBufferId_) {
+            glDeleteBuffers(1, &vertexArrayBufferId_);
+            vertexArrayBufferId_ = 0;
+        }
+        if(indexElementArrayBufferId_) {
+            glDeleteBuffers(1, &indexElementArrayBufferId_);
+            indexElementArrayBufferId_ = 0;
         }
         if(vertexArrayId_) {
             glDeleteVertexArrays(1, &vertexArrayId_);
             vertexArrayId_ = 0;
         }
-        vertexArraySize_ = 0;
     }
 
     void draw() const {
-        // bind and enable vertices
+        // bind VAO
         glBindVertexArray(vertexArrayId_);
         scope(exit) glBindVertexArray(0);
 
-        enable(VertexAttribute.Position, vertexBufferId_, 3, GL_FLOAT);
-        scope(exit) glDisableVertexAttribArray(VertexAttribute.Position);
+        // bind VBO
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexElementArrayBufferId_);
+        scope(exit) glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
         // draw indicies
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vertexArrayId_);
-        scope(exit) glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-        glDrawElements(this.glType, vertexArraySize_, GL_UNSIGNED_INT, null);
-        checkGlError();
+        glDrawElements(this.glType, cast(uint) indexElementArrayBuffer_.length, GL_UNSIGNED_INT, null);
     }
 
 private:
@@ -159,8 +189,12 @@ private:
         }
     }
 
-    void addVertex(Number x, Number y, Number z) {vertexBuffer_ ~= vec3(x, y, z);}
-    void addIndex(uint i) {vertexArray_ ~= i;}
+    void addVertex(Number x, Number y, Number z) {
+        vertexArrayBuffer_ ~= x;
+        vertexArrayBuffer_ ~= y;
+        vertexArrayBuffer_ ~= z;
+    }
+    void addIndex(uint i) {indexElementArrayBuffer_ ~= i;}
 
     void enable(
             VertexAttribute attribute,
@@ -168,18 +202,20 @@ private:
             GLuint size,
             GLenum type,
             GLuint stride = 0,
-            GLuint offset = 0) const nothrow @nogc {
+            GLuint offset = 0) const {
         glEnableVertexAttribArray(attribute);
+
         glBindBuffer(GL_ARRAY_BUFFER, bufferId);
         scope(exit) glBindBuffer(GL_ARRAY_BUFFER, 0);
+
         glVertexAttribPointer(attribute, size, type, GL_FALSE, stride, cast(const(GLvoid*)) offset);
     }
 
     FaceTopology topology_;
-    Array!vec3 vertexBuffer_;
-    Array!uint vertexArray_;
-    uint vertexArraySize_;
-    GLuint vertexBufferId_;
+    Array!Number vertexArrayBuffer_;
+    Array!uint indexElementArrayBuffer_;
     GLuint vertexArrayId_;
+    GLuint vertexArrayBufferId_;
+    GLuint indexElementArrayBufferId_;
 }
 

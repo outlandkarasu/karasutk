@@ -83,7 +83,12 @@ void doGuiMain(F)(ref const(GuiOptions) options, F mainFunction) if(isMainFuncti
     dwritefln("OpenGL version: %s", DerelictGL3.loadedVersion);
 
     auto app = new SdlApplication(window);
-    mainFunction(app);
+    try {
+        mainFunction(app);
+    } catch(Throwable e) {
+        import std.stdio;
+        stderr.writefln("error: %s", e);
+    }
 }
 
 private:

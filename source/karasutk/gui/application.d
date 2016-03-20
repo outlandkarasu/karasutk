@@ -49,11 +49,17 @@ class SdlApplication : Application {
     }
 
     override void drawFrame(void delegate() dg) {
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         scope(exit) {
             glFlush();
             SDL_GL_SwapWindow(window_);
         }
+        glEnable(GL_DEPTH_TEST);
+        scope(exit) glDisable(GL_DEPTH_TEST);
+
+        glEnable(GL_CULL_FACE);
+        scope(exit) glDisable(GL_CULL_FACE);
+
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         dg();
     }

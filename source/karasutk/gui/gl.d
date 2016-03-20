@@ -6,6 +6,8 @@
  */ 
 module karasutk.gui.gl;
 
+import std.array : join;
+import std.algorithm : map;
 import std.format : format;
 import std.stdio : writefln;
 
@@ -29,7 +31,8 @@ void checkGlError(string file = __FILE__, size_t line = __LINE__) {
     }
 
     if(errors.length > 0) {
-        throw new GlException(format("%s", errors), file, line);
+        auto msg = errors.map!(e => format("%02x", e)).join(",");
+        throw new GlException(msg, file, line);
     }
 }
 
