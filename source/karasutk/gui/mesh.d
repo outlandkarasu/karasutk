@@ -40,7 +40,7 @@ interface Mesh {
 interface MeshFactory {
 
     /// vertices appender function.
-    alias void delegate(Number, Number, Number) VertexAppender;
+    alias uint delegate(Number, Number, Number) VertexAppender;
 
     /// point appender function.
     alias void delegate(uint) PointAppender;
@@ -206,10 +206,12 @@ private:
         }
     }
 
-    void addVertex(Number x, Number y, Number z) {
+    uint addVertex(Number x, Number y, Number z) {
+        immutable result = cast(uint) vertexArrayBuffer_.length / 3;
         vertexArrayBuffer_ ~= x;
         vertexArrayBuffer_ ~= y;
         vertexArrayBuffer_ ~= z;
+        return result;
     }
     void addColor(Number r, Number g, Number b) {
         colorArrayBuffer_ ~= r;
