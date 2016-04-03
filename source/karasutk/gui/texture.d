@@ -42,14 +42,14 @@ interface Texture2d(P) : GpuAsset {
         size_t width();
         size_t height();
         size_t length();
-        Pixel opIndex(size_t i);
+        Pixel opIndex(size_t x, size_t y);
     }
 
     Pixel opIndexAssign(Pixel p, size_t x, size_t y) @safe @nogc;
 
     // support foreach statement
     int opApply(int delegate(ref Pixel) dg);
-    int opApply(int delegate(ref Pixel, size_t x, size_t y) dg);
+    int opApply(int delegate(size_t x, size_t y, ref Pixel) dg);
 
     /// fill this texture by a color
     void fill(Pixel p);
@@ -75,15 +75,15 @@ package:
 class SdlTextureFactory : TextureFactory {
 
     RgbTexture2d makeRgbTexture2d(size_t width, size_t height) {
-        return null;
+        return new SdlTexture2d!Rgb(width, height);
     }
 
     RgbaTexture2d makeRgbaTexture2d(size_t width, size_t height) {
-        return null;
+        return new SdlTexture2d!Rgba(width, height);
     }
 }
 
-class SdlTexture2d(P) : Texture!(P) {
+class SdlTexture2d(P) : Texture2d!(P) {
 
     enum PIXEL_TYPE = GL_UNSIGNED_BYTE;
     static if(is(P == Rgb)) {
@@ -92,7 +92,7 @@ class SdlTexture2d(P) : Texture!(P) {
         enum PIXEL_FORMAT = GL_RGBA;
     }
 
-    this(size_t width, size_t height)
+    this(size_t width, size_t height) @nogc
     in {
         assert(width == height);
         switch(width) {
@@ -104,10 +104,10 @@ class SdlTexture2d(P) : Texture!(P) {
     } body {
         this.width_ = width;
         this.height_ = height;
-        this.pixels_ = cast(Pixel[]) Mallocator.instance.allocate(width, height, Pixel.sizeof);
+        this.pixels_ = cast(Pixel[]) Mallocator.instance.allocate(width * height * Pixel.sizeof);
     }
 
-    ~this() @nogc nothrow {
+    ~this() @nogc {
         releaseFromGpu();
         Mallocator.instance.deallocate(pixels_);
     }
@@ -118,7 +118,7 @@ override:
         size_t width() {return width_;}
         size_t height() {return height_;}
         size_t length() {return width_ * height_;}
-        Pixel opIndex(size_t i);
+        Pixel opIndex(size_t x, size_t y) {return pixels_[y * width_ + x];}
     }
 
     Pixel opIndexAssign(Pixel p, size_t x, size_t y) @safe @nogc {
@@ -141,7 +141,7 @@ override:
         size_t x = 0;
         size_t y = 0;
         foreach(p; pixels_) {
-            result = dg(p, x, y);
+            result = dg(x, y, p);
             if(result) {
                 break;
             }
@@ -181,12 +181,12 @@ override:
                 GL_TEXTURE_2D,
                 0,
                 PIXEL_FORMAT,
-                width_,
-                height_,
+                cast(GLsizei) width_,
+                cast(GLsizei) height_,
                 0,
                 PIXEL_FORMAT,
                 PIXEL_TYPE,
-                pixels_.ptr);
+                cast(const(GLvoid)*) pixels_.ptr);
         checkGlError();
     }
 
