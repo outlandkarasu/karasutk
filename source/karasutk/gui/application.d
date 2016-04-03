@@ -10,6 +10,7 @@ module karasutk.gui.application;
 import karasutk.gui.mains;
 import karasutk.gui.mesh;
 import karasutk.gui.shader;
+import karasutk.gui.texture;
 import karasutk.gui.event;
 
 import derelict.sdl2.sdl;
@@ -18,15 +19,17 @@ import derelict.opengl3.gl3;
 /// application objects holder.
 abstract class Application {
 
-    this(EventQueue eventQueue, MeshFactory meshFactory, ShaderFactory shaderFactory) @safe @nogc nothrow {
+    this(EventQueue eventQueue, MeshFactory meshFactory, ShaderFactory shaderFactory, TextureFactory textureFactory) @safe @nogc nothrow {
         this.eventQueue_ = eventQueue;
         this.meshFactory_ = meshFactory;
+        this.textureFactory_ = textureFactory;
         this.shaderFactory_ = shaderFactory;
     }
 
     @property @safe pure nothrow @nogc {
         EventQueue eventQueue() {return eventQueue_;}
         MeshFactory meshFactory() {return meshFactory_;}
+        TextureFactory textureFactory() {return textureFactory_;}
         ShaderFactory shaderFactory() {return shaderFactory_;}
     }
 
@@ -36,6 +39,7 @@ abstract class Application {
 private:
     EventQueue eventQueue_;
     MeshFactory meshFactory_;
+    TextureFactory textureFactory_;
     ShaderFactory shaderFactory_;
 }
 
@@ -44,7 +48,10 @@ package:
 class SdlApplication : Application {
 
     this(SDL_Window* window) @safe {
-        super(new SdlEventQueue(), new SdlMeshFactory(), new SdlShaderFactory());
+        super(new SdlEventQueue(),
+                new SdlMeshFactory(),
+                new SdlShaderFactory(),
+                new SdlTextureFactory());
         this.window_ = window;
     }
 
