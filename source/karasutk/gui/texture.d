@@ -136,7 +136,7 @@ override:
         return result;
     }
 
-    int opApply(int delegate(ref Pixel, size_t x, size_t y) dg) {
+    int opApply(int delegate(size_t x, size_t y, ref Pixel) dg) {
         int result = 0;
         size_t x = 0;
         size_t y = 0;
