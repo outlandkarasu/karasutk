@@ -11,13 +11,14 @@ import std.container : Array;
 
 import derelict.opengl3.gl3;
 
+import karasutk.gui.gpu : GpuAsset;
 import karasutk.gui.gl : checkGlError;
 
 /// number for mesh coordinate
 alias Number = float;
 
 /// Mesh interface
-interface Mesh {
+interface Mesh : GpuAsset {
 
     /// face topology types
     enum FaceTopology {
@@ -25,12 +26,6 @@ interface Mesh {
         LINES,
         TRIANGLES,
     }
-
-    /// transfer data to GPU.
-    void transferToGpu();
-
-    /// release data from GPU.
-    void releaseFromGpu() @nogc nothrow;
 
     /// draw to display
     void draw() const;
