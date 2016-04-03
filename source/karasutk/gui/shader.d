@@ -7,6 +7,7 @@
 
 module karasutk.gui.shader;
 
+import karasutk.gui.gpu : GpuAsset;
 import karasutk.gui.gl : GlException;
 
 import derelict.opengl3.gl3;
@@ -18,13 +19,7 @@ struct ShaderSource {
 }
 
 /// shader placeholder
-interface Shader {
-
-    /// transfer data to GPU.
-    void transferToGpu();
-
-    /// release data from GPU.
-    void releaseFromGpu();
+interface Shader : GpuAsset {
 
     /// do process during use program.
     void duringUse(void delegate() dg) const;
