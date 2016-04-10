@@ -7,13 +7,17 @@
 
 module karasutk.gui.gpu;
 
-/// common methods for GPU assets
-interface GpuAsset {
-
-    /// transfer data to GPU.
-    void transferToGpu();
+/// common methods for releaseable GPU assets
+interface GpuReleasableAsset {
 
     /// release data from GPU.
     void releaseFromGpu() @nogc nothrow;
+}
+
+/// common methods for GPU assets
+interface GpuAsset : GpuReleasableAsset {
+
+    /// transfer data to GPU.
+    void transferToGpu();
 }
 

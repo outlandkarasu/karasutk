@@ -8,11 +8,18 @@
 module karasutk.gui.mesh;
 
 import std.container : Array;
+import std.stdio : writefln;
 
 import derelict.opengl3.gl3;
 
-import karasutk.gui.gpu : GpuAsset;
-import karasutk.gui.gl : checkGlError;
+import karasutk.gui.gpu :
+    GpuAsset,
+    GpuReleasableAsset;
+import karasutk.gui.gl :
+    checkGlError,
+    VertexAttribute,
+    VertexElementArrayBuffer,
+    VertexArrayObject;
 
 /// number for mesh coordinate
 alias Number = float;
@@ -28,7 +35,7 @@ interface Mesh : GpuAsset {
     }
 
     /// draw to display
-    void draw() const;
+    void draw();
 }
 
 /// Mesh factory interface.
@@ -101,9 +108,9 @@ class SdlMesh : Mesh {
 
     ~this() @nogc nothrow {
         releaseFromGpu();
-        vertexArrayBuffer_.clear();
-        colorArrayBuffer_.clear();
-        indexElementArrayBuffer_.clear();
+        vertexArray_.clear();
+        colorArray_.clear();
+        indexElementArray_.clear();
     }
 
     void transferToGpu() {
@@ -111,80 +118,67 @@ class SdlMesh : Mesh {
         releaseFromGpu();
         scope(failure) releaseFromGpu();
 
-        glGenVertexArrays(1, &vertexArrayId_);
-        glBindVertexArray(vertexArrayId_);
-        scope(exit) glBindVertexArray(0);
+        // create VAO
+        assert(vertexArrayObject_ is null);
+        vertexArrayObject_ = new VertexArrayObject();
 
-        scope(exit) glBindBuffer(GL_ARRAY_BUFFER, 0);
+        // use VAO
+        vertexArrayObject_.bind();
+        scope(exit) vertexArrayObject_.unbind();
 
-        // transfer vertices data
-        glGenBuffers(1, &vertexArrayBufferId_);
-        glBindBuffer(GL_ARRAY_BUFFER, vertexArrayBufferId_);
-        glBufferData(
-                GL_ARRAY_BUFFER,
-                vertexArrayBuffer_.length * Number.sizeof,
-                &vertexArrayBuffer_[0],
-                GL_STATIC_DRAW);
-        enable(VertexAttribute.Position, vertexArrayBufferId_, 3, GL_FLOAT);
+        // transfer verticies to a GPU buffer.
+        assert(vertexArrayBuffer_ is null);
+        vertexArrayBuffer_ = new VertexArrayBuffer(VertexAttributeIndex.Position); 
+        vertexArrayBuffer_.transfer((&vertexArray_[0])[0 .. vertexArray_.length]);
 
-        // transfer vertices color data
-        glGenBuffers(1, &colorArrayBufferId_);
-        glBindBuffer(GL_ARRAY_BUFFER, colorArrayBufferId_);
-        glBufferData(
-                GL_ARRAY_BUFFER,
-                colorArrayBuffer_.length * Number.sizeof,
-                &colorArrayBuffer_[0],
-                GL_STATIC_DRAW);
-        enable(VertexAttribute.Color, colorArrayBufferId_, 3, GL_FLOAT);
+        // transfer vertex colors to a GPU buffer.
+        assert(colorArrayBuffer_ is null);
+        colorArrayBuffer_ = new ColorArrayBuffer(VertexAttributeIndex.Color); 
+        colorArrayBuffer_.transfer((&colorArray_[0])[0 .. colorArray_.length]);
 
-        // transfer indicies data
-        glGenBuffers(1, &indexElementArrayBufferId_);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexElementArrayBufferId_);
-        scope(exit) glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-        glBufferData(
-                GL_ELEMENT_ARRAY_BUFFER,
-                indexElementArrayBuffer_.length * uint.sizeof,
-                &indexElementArrayBuffer_[0],
-                GL_STATIC_DRAW);
+        // transfer indicies to a GPU buffer.
+        assert(indexElementArrayBuffer_ is null);
+        indexElementArrayBuffer_ = new IndexElementArrayBuffer(glType); 
+        indexElementArrayBuffer_.transfer((&indexElementArray_[0])[0 .. indexElementArray_.length]);
     }
 
-    void releaseFromGpu() nothrow {
-        if(vertexArrayBufferId_) {
-            glDeleteBuffers(1, &vertexArrayBufferId_);
-            vertexArrayBufferId_ = 0;
-        }
-        if(colorArrayBufferId_) {
-            glDeleteBuffers(1, &colorArrayBufferId_);
-            colorArrayBufferId_ = 0;
-        }
-        if(indexElementArrayBufferId_) {
-            glDeleteBuffers(1, &indexElementArrayBufferId_);
-            indexElementArrayBufferId_ = 0;
-        }
-        if(vertexArrayId_) {
-            glDeleteVertexArrays(1, &vertexArrayId_);
-            vertexArrayId_ = 0;
-        }
+    void releaseFromGpu() nothrow @nogc
+    out{
+        assert(vertexArrayBuffer_ is null);
+        assert(colorArrayBuffer_ is null);
+        assert(indexElementArrayBuffer_ is null);
+        assert(vertexArrayObject_ is null);
+    } body {
+        destroyObject(vertexArrayBuffer_);
+        destroyObject(colorArrayBuffer_);
+        destroyObject(indexElementArrayBuffer_);
+        destroyObject(vertexArrayObject_);
     }
 
-    void draw() const {
+    void draw()
+    in{
+        assert(vertexArrayObject_ !is null);
+        assert(indexElementArrayBuffer_ !is null);
+    } body {
         // bind VAO
-        glBindVertexArray(vertexArrayId_);
-        scope(exit) glBindVertexArray(0);
-
-        // bind VBO
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexElementArrayBufferId_);
-        scope(exit) glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+        vertexArrayObject_.bind();
+        scope(exit) vertexArrayObject_.unbind();
 
         // draw indicies
-        glDrawElements(this.glType, cast(uint) indexElementArrayBuffer_.length, GL_UNSIGNED_INT, null);
+        indexElementArrayBuffer_.draw();
     }
 
 private:
 
+    static void destroyObject(T : GpuReleasableAsset)(ref T obj) @trusted nothrow @nogc {
+        if(obj !is null) {
+            obj.releaseFromGpu();
+            obj = null;
+        }
+    }
+
     // vertex attribute index
-    enum VertexAttribute : GLuint {
+    enum VertexAttributeIndex : GLuint {
         Position,
         Color
     }
@@ -202,41 +196,32 @@ private:
     }
 
     uint addVertex(Number x, Number y, Number z) {
-        immutable result = cast(uint) vertexArrayBuffer_.length / 3;
-        vertexArrayBuffer_ ~= x;
-        vertexArrayBuffer_ ~= y;
-        vertexArrayBuffer_ ~= z;
+        uint result = cast(uint) vertexArray_.length;
+        vertexArray_ ~= Vertex([x, y, z]);
         return result;
     }
     void addColor(Number r, Number g, Number b) {
-        colorArrayBuffer_ ~= r;
-        colorArrayBuffer_ ~= g;
-        colorArrayBuffer_ ~= b;
+        colorArray_ ~= Color([r, g, b]);
     }
-    void addIndex(uint i) {indexElementArrayBuffer_ ~= i;}
-
-    void enable(
-            VertexAttribute attribute,
-            GLuint bufferId,
-            GLuint size,
-            GLenum type,
-            GLuint stride = 0,
-            GLuint offset = 0) const {
-        glEnableVertexAttribArray(attribute);
-
-        glBindBuffer(GL_ARRAY_BUFFER, bufferId);
-        scope(exit) glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-        glVertexAttribPointer(attribute, size, type, GL_FALSE, stride, cast(const(GLvoid*)) offset);
+    void addIndex(uint i) {
+        indexElementArray_ ~= IndexElement([i]);
     }
+
+    alias VertexArrayBuffer = VertexAttribute!(float, 3);
+    alias Vertex = VertexArrayBuffer.Component;
+    alias ColorArrayBuffer = VertexAttribute!(float, 3);
+    alias Color = ColorArrayBuffer.Component;
+    alias IndexElementArrayBuffer = VertexElementArrayBuffer!();
+    alias IndexElement = IndexElementArrayBuffer.Component;
 
     FaceTopology topology_;
-    Array!Number vertexArrayBuffer_;
-    Array!Number colorArrayBuffer_;
-    Array!uint indexElementArrayBuffer_;
-    GLuint vertexArrayId_;
-    GLuint vertexArrayBufferId_;
-    GLuint colorArrayBufferId_;
-    GLuint indexElementArrayBufferId_;
+    Array!Vertex vertexArray_;
+    Array!Color colorArray_;
+    Array!IndexElement indexElementArray_;
+
+    VertexArrayBuffer vertexArrayBuffer_;
+    ColorArrayBuffer colorArrayBuffer_;
+    IndexElementArrayBuffer indexElementArrayBuffer_;
+    VertexArrayObject vertexArrayObject_;
 }
 
