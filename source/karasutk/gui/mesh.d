@@ -38,11 +38,17 @@ interface Mesh : GpuAsset {
     void draw();
 }
 
+struct VertexAttributes {
+    float[3] position;
+    float[3] color;
+    float[2] uv;
+}
+
 /// Mesh factory interface.
 interface MeshFactory {
 
-    /// vertices appender function.
-    alias uint delegate(Number, Number, Number) VertexAppender;
+    /// vertex attirbutes appender function.
+    alias uint delegate(ref const VertexAttributes) AttributesAppender;
 
     /// point appender function.
     alias void delegate(uint) PointAppender;
@@ -53,17 +59,14 @@ interface MeshFactory {
     /// triangle appender function.
     alias void delegate(uint, uint, uint) TriangleAppender;
 
-    /// color appender function.
-    alias void delegate(Number, Number, Number) ColorAppender;
-
     /// add points by user delegate.
-    Mesh makePoints(void delegate(VertexAppender, PointAppender, ColorAppender) dg);
+    Mesh makePoints(void delegate(AttributesAppender, PointAppender) dg);
 
     /// add lines by user delegate.
-    Mesh makeLines(void delegate(VertexAppender, LineAppender, ColorAppender) dg);
+    Mesh makeLines(void delegate(AttributesAppender, LineAppender) dg);
 
     /// add triangles by user delegate.
-    Mesh makeTriangles(void delegate(VertexAppender, TriangleAppender, ColorAppender) dg);
+    Mesh makeTriangles(void delegate(AttributesAppender, TriangleAppender) dg);
 }
 
 package:
@@ -71,32 +74,32 @@ package:
 class SdlMeshFactory : MeshFactory {
 
     /// add points by user delegate.
-    Mesh makePoints(void delegate(VertexAppender, PointAppender, ColorAppender) dg) {
+    Mesh makePoints(void delegate(AttributesAppender, PointAppender) dg) {
         auto mesh = new SdlMesh(Mesh.FaceTopology.POINTS);
-        dg(&mesh.addVertex, &mesh.addIndex, &mesh.addColor);
+        dg(&mesh.addAttributes, &mesh.addIndex);
         return mesh;
     }
 
     /// add lines by user delegate.
-    Mesh makeLines(void delegate(VertexAppender, LineAppender, ColorAppender) dg) {
+    Mesh makeLines(void delegate(AttributesAppender, LineAppender) dg) {
         auto mesh = new SdlMesh(Mesh.FaceTopology.LINES);
         void addLine(uint p1, uint p2) {
             mesh.addIndex(p1);
             mesh.addIndex(p2);
         }
-        dg(&mesh.addVertex, &addLine, &mesh.addColor);
+        dg(&mesh.addAttributes, &addLine);
         return mesh;
     }
 
     /// add triangles by user delegate.
-    Mesh makeTriangles(void delegate(VertexAppender, TriangleAppender, ColorAppender) dg) {
+    Mesh makeTriangles(void delegate(AttributesAppender, TriangleAppender) dg) {
         auto mesh = new SdlMesh(Mesh.FaceTopology.TRIANGLES);
         void addTriangle(uint p1, uint p2, uint p3) {
             mesh.addIndex(p1);
             mesh.addIndex(p2);
             mesh.addIndex(p3);
         }
-        dg(&mesh.addVertex, &addTriangle, &mesh.addColor);
+        dg(&mesh.addAttributes, &addTriangle);
         return mesh;
     }
 }
@@ -108,8 +111,7 @@ class SdlMesh : Mesh {
 
     ~this() @nogc nothrow {
         releaseFromGpu();
-        vertexArray_.clear();
-        colorArray_.clear();
+        vertexAttributesArray_.clear();
         indexElementArray_.clear();
     }
 
@@ -126,15 +128,10 @@ class SdlMesh : Mesh {
         vertexArrayObject_.bind();
         scope(exit) vertexArrayObject_.unbind();
 
-        // transfer verticies to a GPU buffer.
-        assert(vertexArrayBuffer_ is null);
-        vertexArrayBuffer_ = new VertexArrayBuffer(VertexAttributeIndex.Position); 
-        vertexArrayBuffer_.transfer((&vertexArray_[0])[0 .. vertexArray_.length]);
-
-        // transfer vertex colors to a GPU buffer.
-        assert(colorArrayBuffer_ is null);
-        colorArrayBuffer_ = new ColorArrayBuffer(VertexAttributeIndex.Color); 
-        colorArrayBuffer_.transfer((&colorArray_[0])[0 .. colorArray_.length]);
+        // transfer vertex attributes to a GPU buffer.
+        assert(vertexAttributesArrayBuffer_ is null);
+        vertexAttributesArrayBuffer_ = new VertexAttributesBuffer(); 
+        vertexAttributesArrayBuffer_.transfer((&vertexAttributesArray_[0])[0 .. vertexAttributesArray_.length]);
 
         // transfer indicies to a GPU buffer.
         assert(indexElementArrayBuffer_ is null);
@@ -144,13 +141,11 @@ class SdlMesh : Mesh {
 
     void releaseFromGpu() nothrow @nogc
     out{
-        assert(vertexArrayBuffer_ is null);
-        assert(colorArrayBuffer_ is null);
+        assert(vertexAttributesArrayBuffer_ is null);
         assert(indexElementArrayBuffer_ is null);
         assert(vertexArrayObject_ is null);
     } body {
-        destroyObject(vertexArrayBuffer_);
-        destroyObject(colorArrayBuffer_);
+        destroyObject(vertexAttributesArrayBuffer_);
         destroyObject(indexElementArrayBuffer_);
         destroyObject(vertexArrayObject_);
     }
@@ -195,32 +190,23 @@ private:
         }
     }
 
-    uint addVertex(Number x, Number y, Number z) {
-        uint result = cast(uint) vertexArray_.length;
-        vertexArray_ ~= Vertex([x, y, z]);
-        return result;
-    }
-    void addColor(Number r, Number g, Number b) {
-        colorArray_ ~= Color([r, g, b]);
-    }
-    void addIndex(uint i) {
-        indexElementArray_ ~= IndexElement([i]);
+    uint addAttributes(ref const(VertexAttributes) attributes) {
+        immutable result = vertexAttributesArray_.length;
+        vertexAttributesArray_ ~= attributes;
+        return cast(uint) result;
     }
 
-    alias VertexArrayBuffer = VertexAttribute!(float, 3);
-    alias Vertex = VertexArrayBuffer.Component;
-    alias ColorArrayBuffer = VertexAttribute!(float, 3);
-    alias Color = ColorArrayBuffer.Component;
+    void addIndex(uint i) {indexElementArray_ ~= i;}
+
+    alias VertexAttributesBuffer = VertexAttribute!VertexAttributes;
     alias IndexElementArrayBuffer = VertexElementArrayBuffer!();
     alias IndexElement = IndexElementArrayBuffer.Component;
 
     FaceTopology topology_;
-    Array!Vertex vertexArray_;
-    Array!Color colorArray_;
+    Array!VertexAttributes vertexAttributesArray_;
     Array!IndexElement indexElementArray_;
 
-    VertexArrayBuffer vertexArrayBuffer_;
-    ColorArrayBuffer colorArrayBuffer_;
+    VertexAttributesBuffer vertexAttributesArrayBuffer_;
     IndexElementArrayBuffer indexElementArrayBuffer_;
     VertexArrayObject vertexArrayObject_;
 }

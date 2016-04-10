@@ -10,6 +10,7 @@ import std.array : join;
 import std.algorithm : map;
 import std.format : format;
 import std.stdio : writefln;
+import std.traits : Fields, FieldNameTuple, isStaticArray, isArray;
 
 import derelict.opengl3.gl3;
 
@@ -54,21 +55,15 @@ abstract class BindableObject : GpuReleasableAsset {
 }
 
 /// OpenGL buffer data class
-class BufferData(GLenum Target, T, GLint ComponentSize = 1) : BindableObject {
+class BufferData(GLenum Target, T) : BindableObject {
 
-    struct Component {
-    align(1):
-        T[ComponentSize] values;
-    }
+    alias Component = T;
 
     /// default constructor
     this() {
         glGenBuffers(1, &id_);
         checkGlError();
     }
-
-    /// remove from GPU
-    ~this() nothrow @nogc {releaseFromGpu();}
 
     /// ditto
     void releaseFromGpu() nothrow @nogc {
@@ -90,7 +85,7 @@ class BufferData(GLenum Target, T, GLint ComponentSize = 1) : BindableObject {
     }
 
     /// trasfer buffer data to GPU.
-    void transfer(Component[] data) {
+    void transfer(const(Component)[] data) {
         bind();
         scope(exit) unbind();
 
@@ -113,51 +108,50 @@ private:
     GLuint id_;
 }
 
+alias ArrayElementOf(T : T[]) = T;
+
 /// OpenGL vertex attribute class
-class VertexAttribute(T, GLint ComponentSize)
-        : BufferData!(GL_ARRAY_BUFFER, T, ComponentSize) {
+class VertexAttribute(T)
+        : BufferData!(GL_ARRAY_BUFFER, T) {
 
-    /**
-     *  Params:
-     *      index = vertex attribute index
-     *      normalized = normalized fixed value
-     */
-    this(GLuint index, bool normalized = false) {
-        index_ = index;
-        normalized_ = normalized ? GL_TRUE : GL_FALSE;
-    }
-
-    /// vertex attribute index
-    @property GLuint index() @safe pure nothrow @nogc const {
-        return index_;
-    }
+    static assert(is(T == struct));
 
     /// trasfer buffer and register an attribute pointer.
-    override void transfer(Component[] data) {
+    override void transfer(const(Component)[] data) {
         super.transfer(data);
 
         bind();
         scope(exit) unbind();
 
-        glEnableVertexAttribArray(index_);
-        glVertexAttribPointer(
-            index_,
-            ComponentSize,
-            GlType!T,
-            normalized_,
-            0,
-            cast(const(GLvoid*)) 0);
-        checkGlError();
-    }
+        foreach(i, name; FieldNameTuple!Component) {
+            alias FieldType = Fields!Component[i];
+            static assert(isStaticArray!FieldType || !isArray!FieldType);
+            static if(isStaticArray!FieldType) {
+                enum ComponentSize = FieldType.length;
+                enum AttributeType = GlType!(ArrayElementOf!FieldType);
+            } else {
+                enum ComponentSize = 1;
+                enum AttributeType = GlType!FieldType;
+            }
 
-private:
-    GLuint index_;
-    GLboolean normalized_;
+            enum Offset = mixin("T." ~ name ~ ".offsetof");
+
+            glEnableVertexAttribArray(i);
+            glVertexAttribPointer(
+                i,
+                ComponentSize,
+                AttributeType,
+                GL_FALSE,
+                Component.sizeof,
+                cast(const(GLvoid*))(0 + Offset));
+            checkGlError();
+        }
+    }
 }
 
 /// OpenGL vertex element array buffer class
 class VertexElementArrayBuffer(T = uint)
-        : BufferData!(GL_ELEMENT_ARRAY_BUFFER, T, 1) {
+        : BufferData!(GL_ELEMENT_ARRAY_BUFFER, T) {
 
     /**
      *  Params:
@@ -189,9 +183,6 @@ class VertexArrayObject : BindableObject {
         checkGlError();
     }
 
-    /// remove from GPU
-    ~this() nothrow @nogc {releaseFromGpu();}
-
     override void bind() {
         glBindVertexArray(id_);
         checkGlError();
@@ -206,6 +197,66 @@ class VertexArrayObject : BindableObject {
             glDeleteVertexArrays(1, &id_);
             id_ = 0;
         }
+    }
+
+private:
+    GLuint id_;
+}
+
+/// 2D texture class
+class Texture2d : BindableObject {
+
+    struct Pixel(T) {
+        T r;
+        T g;
+        T b;
+    }
+
+    /// default constructor
+    this() {
+        glGenTextures(1, &id_);
+        checkGlError();
+    }
+
+    override void bind() {
+        glBindTexture(GL_TEXTURE_2D, id_);
+        checkGlError();
+    }
+
+    override void unbind() nothrow @nogc {
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
+
+    void releaseFromGpu() nothrow @nogc {
+        if(id_ != 0) {
+            glDeleteTextures(1, &id_);
+            id_ = 0;
+        }
+    }
+
+    /**
+     *  transfer RGB pixel data to GPU.
+     *
+     *  Params:
+     *      width = texture pixel width
+     *      height = texture pixel height
+     *      pixels = pixel data
+     */
+    void image(T)(GLsizei width, GLsizei height, const(Pixel!(T))[] pixels)
+    in {
+        assert(width * height == pixels.length);
+    } body {
+        bind();
+        scope(exit) unbind();
+
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, pixels.ptr);
+        checkGlError();
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        checkGlError();
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        checkGlError();
     }
 
 private:
