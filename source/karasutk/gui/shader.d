@@ -7,8 +7,11 @@
 
 module karasutk.gui.shader;
 
+import std.stdio : writefln;
+
 import karasutk.gui.gpu : GpuAsset;
-import karasutk.gui.gl : GlException;
+import karasutk.gui.gl : GlException, checkGlError;
+import karasutk.gui.texture : Texture2d, Rgb;
 
 import derelict.opengl3.gl3;
 
@@ -21,8 +24,10 @@ struct ShaderSource {
 /// shader placeholder
 interface Shader : GpuAsset {
 
+    alias ParameterBinder = void delegate(Texture2d!Rgb);
+
     /// do process during use program.
-    void duringUse(void delegate() dg) const;
+    void duringUse(void delegate(ParameterBinder) dg) const;
 }
 
 /// shader factory 
@@ -70,13 +75,21 @@ class SdlShader : Shader {
     }
 
     /// do process during use program.
-    void duringUse(void delegate() dg) const {
+    void duringUse(void delegate(ParameterBinder) dg) const {
         glUseProgram(programId_);
         scope(exit) glUseProgram(0);
-        dg();
+        dg(&bindParameter);
     }
 
 private:
+
+    void bindParameter(Texture2d!Rgb texture) {
+        auto texLocation = glGetUniformLocation(programId_, "tex");
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, texture.id);
+        glUniform1i(texLocation, 0);
+        checkGlError();
+    }
 
     ShaderSource source_;
     GLuint programId_;

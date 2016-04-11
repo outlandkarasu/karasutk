@@ -43,6 +43,7 @@ interface Texture2d(P) : GpuAsset {
         size_t height();
         size_t length();
         Pixel opIndex(size_t x, size_t y);
+        int id();
     }
 
     Pixel opIndexAssign(Pixel p, size_t x, size_t y) @safe @nogc;
@@ -54,7 +55,7 @@ interface Texture2d(P) : GpuAsset {
     /// fill this texture by a color
     void fill(Pixel p);
 
-    void select(uint layer);
+    void select();
 }
 
 alias RgbTexture2d = Texture2d!(Rgb);
@@ -119,6 +120,7 @@ override:
         size_t height() {return height_;}
         size_t length() {return width_ * height_;}
         Pixel opIndex(size_t x, size_t y) {return pixels_[y * width_ + x];}
+        int id() {return textureId_;}
     }
 
     Pixel opIndexAssign(Pixel p, size_t x, size_t y) @safe @nogc {
@@ -158,11 +160,11 @@ override:
 
     void fill(Pixel p) @safe pure nothrow @nogc {pixels_[] = p;}
 
-    void select(uint layer)
+    void select()
     in {
         assert(textureId_ != 0);
     } body {
-        glActiveTexture(GL_TEXTURE0 + layer);
+        glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, textureId_);
     }
 
@@ -172,8 +174,10 @@ override:
         scope(failure) releaseFromGpu();
 
         glGenTextures(1, &textureId_);
+        checkGlError();
 
         // transfer pixel data
+        glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, textureId_);
         scope(exit) glBindTexture(GL_TEXTURE_2D, 0);
 
@@ -187,6 +191,8 @@ override:
                 PIXEL_FORMAT,
                 PIXEL_TYPE,
                 cast(const(GLvoid)*) pixels_.ptr);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         checkGlError();
     }
 

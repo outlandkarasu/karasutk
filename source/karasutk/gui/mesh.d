@@ -48,16 +48,16 @@ struct VertexAttributes {
 interface MeshFactory {
 
     /// vertex attirbutes appender function.
-    alias uint delegate(ref const VertexAttributes) AttributesAppender;
+    alias AttributesAppender = uint delegate(VertexAttributes);
 
     /// point appender function.
-    alias void delegate(uint) PointAppender;
+    alias PointAppender = void delegate(uint);
 
     /// line appender function.
-    alias void delegate(uint, uint) LineAppender;
+    alias LineAppender = void delegate(uint, uint);
 
     /// triangle appender function.
-    alias void delegate(uint, uint, uint) TriangleAppender;
+    alias TriangleAppender = void delegate(uint, uint, uint);
 
     /// add points by user delegate.
     Mesh makePoints(void delegate(AttributesAppender, PointAppender) dg);
@@ -190,7 +190,7 @@ private:
         }
     }
 
-    uint addAttributes(ref const(VertexAttributes) attributes) {
+    uint addAttributes(VertexAttributes attributes) {
         immutable result = vertexAttributesArray_.length;
         vertexAttributesArray_ ~= attributes;
         return cast(uint) result;
