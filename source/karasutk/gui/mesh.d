@@ -8,16 +8,24 @@
 module karasutk.gui.mesh;
 
 import std.container : Array;
+import std.stdio : writefln;
 
 import derelict.opengl3.gl3;
 
-import karasutk.gui.gl : checkGlError;
+import karasutk.gui.gpu :
+    GpuAsset,
+    GpuReleasableAsset;
+import karasutk.gui.gl :
+    checkGlError,
+    VertexAttribute,
+    VertexElementArrayBuffer,
+    VertexArrayObject;
 
 /// number for mesh coordinate
 alias Number = float;
 
 /// Mesh interface
-interface Mesh {
+interface Mesh : GpuAsset {
 
     /// face topology types
     enum FaceTopology {
@@ -26,42 +34,39 @@ interface Mesh {
         TRIANGLES,
     }
 
-    /// transfer data to GPU.
-    void transferToGpu();
-
-    /// release data from GPU.
-    void releaseFromGpu() @nogc nothrow;
-
     /// draw to display
-    void draw() const;
+    void draw();
+}
+
+struct VertexAttributes {
+    float[3] position;
+    float[3] color;
+    float[2] uv;
 }
 
 /// Mesh factory interface.
 interface MeshFactory {
 
-    /// vertices appender function.
-    alias uint delegate(Number, Number, Number) VertexAppender;
+    /// vertex attirbutes appender function.
+    alias AttributesAppender = uint delegate(VertexAttributes);
 
     /// point appender function.
-    alias void delegate(uint) PointAppender;
+    alias PointAppender = void delegate(uint);
 
     /// line appender function.
-    alias void delegate(uint, uint) LineAppender;
+    alias LineAppender = void delegate(uint, uint);
 
     /// triangle appender function.
-    alias void delegate(uint, uint, uint) TriangleAppender;
-
-    /// color appender function.
-    alias void delegate(Number, Number, Number) ColorAppender;
+    alias TriangleAppender = void delegate(uint, uint, uint);
 
     /// add points by user delegate.
-    Mesh makePoints(void delegate(VertexAppender, PointAppender, ColorAppender) dg);
+    Mesh makePoints(void delegate(AttributesAppender, PointAppender) dg);
 
     /// add lines by user delegate.
-    Mesh makeLines(void delegate(VertexAppender, LineAppender, ColorAppender) dg);
+    Mesh makeLines(void delegate(AttributesAppender, LineAppender) dg);
 
     /// add triangles by user delegate.
-    Mesh makeTriangles(void delegate(VertexAppender, TriangleAppender, ColorAppender) dg);
+    Mesh makeTriangles(void delegate(AttributesAppender, TriangleAppender) dg);
 }
 
 package:
@@ -69,32 +74,32 @@ package:
 class SdlMeshFactory : MeshFactory {
 
     /// add points by user delegate.
-    Mesh makePoints(void delegate(VertexAppender, PointAppender, ColorAppender) dg) {
+    Mesh makePoints(void delegate(AttributesAppender, PointAppender) dg) {
         auto mesh = new SdlMesh(Mesh.FaceTopology.POINTS);
-        dg(&mesh.addVertex, &mesh.addIndex, &mesh.addColor);
+        dg(&mesh.addAttributes, &mesh.addIndex);
         return mesh;
     }
 
     /// add lines by user delegate.
-    Mesh makeLines(void delegate(VertexAppender, LineAppender, ColorAppender) dg) {
+    Mesh makeLines(void delegate(AttributesAppender, LineAppender) dg) {
         auto mesh = new SdlMesh(Mesh.FaceTopology.LINES);
         void addLine(uint p1, uint p2) {
             mesh.addIndex(p1);
             mesh.addIndex(p2);
         }
-        dg(&mesh.addVertex, &addLine, &mesh.addColor);
+        dg(&mesh.addAttributes, &addLine);
         return mesh;
     }
 
     /// add triangles by user delegate.
-    Mesh makeTriangles(void delegate(VertexAppender, TriangleAppender, ColorAppender) dg) {
+    Mesh makeTriangles(void delegate(AttributesAppender, TriangleAppender) dg) {
         auto mesh = new SdlMesh(Mesh.FaceTopology.TRIANGLES);
         void addTriangle(uint p1, uint p2, uint p3) {
             mesh.addIndex(p1);
             mesh.addIndex(p2);
             mesh.addIndex(p3);
         }
-        dg(&mesh.addVertex, &addTriangle, &mesh.addColor);
+        dg(&mesh.addAttributes, &addTriangle);
         return mesh;
     }
 }
@@ -106,9 +111,8 @@ class SdlMesh : Mesh {
 
     ~this() @nogc nothrow {
         releaseFromGpu();
-        vertexArrayBuffer_.clear();
-        colorArrayBuffer_.clear();
-        indexElementArrayBuffer_.clear();
+        vertexAttributesArray_.clear();
+        indexElementArray_.clear();
     }
 
     void transferToGpu() {
@@ -116,80 +120,60 @@ class SdlMesh : Mesh {
         releaseFromGpu();
         scope(failure) releaseFromGpu();
 
-        glGenVertexArrays(1, &vertexArrayId_);
-        glBindVertexArray(vertexArrayId_);
-        scope(exit) glBindVertexArray(0);
+        // create VAO
+        assert(vertexArrayObject_ is null);
+        vertexArrayObject_ = new VertexArrayObject();
 
-        scope(exit) glBindBuffer(GL_ARRAY_BUFFER, 0);
+        // use VAO
+        vertexArrayObject_.bind();
+        scope(exit) vertexArrayObject_.unbind();
 
-        // transfer vertices data
-        glGenBuffers(1, &vertexArrayBufferId_);
-        glBindBuffer(GL_ARRAY_BUFFER, vertexArrayBufferId_);
-        glBufferData(
-                GL_ARRAY_BUFFER,
-                vertexArrayBuffer_.length * Number.sizeof,
-                &vertexArrayBuffer_[0],
-                GL_STATIC_DRAW);
-        enable(VertexAttribute.Position, vertexArrayBufferId_, 3, GL_FLOAT);
+        // transfer vertex attributes to a GPU buffer.
+        assert(vertexAttributesArrayBuffer_ is null);
+        vertexAttributesArrayBuffer_ = new VertexAttributesBuffer(); 
+        vertexAttributesArrayBuffer_.transfer((&vertexAttributesArray_[0])[0 .. vertexAttributesArray_.length]);
 
-        // transfer vertices color data
-        glGenBuffers(1, &colorArrayBufferId_);
-        glBindBuffer(GL_ARRAY_BUFFER, colorArrayBufferId_);
-        glBufferData(
-                GL_ARRAY_BUFFER,
-                colorArrayBuffer_.length * Number.sizeof,
-                &colorArrayBuffer_[0],
-                GL_STATIC_DRAW);
-        enable(VertexAttribute.Color, colorArrayBufferId_, 3, GL_FLOAT);
-
-        // transfer indicies data
-        glGenBuffers(1, &indexElementArrayBufferId_);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexElementArrayBufferId_);
-        scope(exit) glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-        glBufferData(
-                GL_ELEMENT_ARRAY_BUFFER,
-                indexElementArrayBuffer_.length * uint.sizeof,
-                &indexElementArrayBuffer_[0],
-                GL_STATIC_DRAW);
+        // transfer indicies to a GPU buffer.
+        assert(indexElementArrayBuffer_ is null);
+        indexElementArrayBuffer_ = new IndexElementArrayBuffer(glType); 
+        indexElementArrayBuffer_.transfer((&indexElementArray_[0])[0 .. indexElementArray_.length]);
     }
 
-    void releaseFromGpu() nothrow {
-        if(vertexArrayBufferId_) {
-            glDeleteBuffers(1, &vertexArrayBufferId_);
-            vertexArrayBufferId_ = 0;
-        }
-        if(colorArrayBufferId_) {
-            glDeleteBuffers(1, &colorArrayBufferId_);
-            colorArrayBufferId_ = 0;
-        }
-        if(indexElementArrayBufferId_) {
-            glDeleteBuffers(1, &indexElementArrayBufferId_);
-            indexElementArrayBufferId_ = 0;
-        }
-        if(vertexArrayId_) {
-            glDeleteVertexArrays(1, &vertexArrayId_);
-            vertexArrayId_ = 0;
-        }
+    void releaseFromGpu() nothrow @nogc
+    out{
+        assert(vertexAttributesArrayBuffer_ is null);
+        assert(indexElementArrayBuffer_ is null);
+        assert(vertexArrayObject_ is null);
+    } body {
+        destroyObject(vertexAttributesArrayBuffer_);
+        destroyObject(indexElementArrayBuffer_);
+        destroyObject(vertexArrayObject_);
     }
 
-    void draw() const {
+    void draw()
+    in{
+        assert(vertexArrayObject_ !is null);
+        assert(indexElementArrayBuffer_ !is null);
+    } body {
         // bind VAO
-        glBindVertexArray(vertexArrayId_);
-        scope(exit) glBindVertexArray(0);
-
-        // bind VBO
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexElementArrayBufferId_);
-        scope(exit) glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+        vertexArrayObject_.bind();
+        scope(exit) vertexArrayObject_.unbind();
 
         // draw indicies
-        glDrawElements(this.glType, cast(uint) indexElementArrayBuffer_.length, GL_UNSIGNED_INT, null);
+        indexElementArrayBuffer_.draw();
     }
 
 private:
 
+    static void destroyObject(T : GpuReleasableAsset)(ref T obj) @trusted nothrow @nogc {
+        if(obj !is null) {
+            obj.releaseFromGpu();
+            obj = null;
+        }
+    }
+
     // vertex attribute index
-    enum VertexAttribute : GLuint {
+    enum VertexAttributeIndex : GLuint {
         Position,
         Color
     }
@@ -206,42 +190,24 @@ private:
         }
     }
 
-    uint addVertex(Number x, Number y, Number z) {
-        immutable result = cast(uint) vertexArrayBuffer_.length / 3;
-        vertexArrayBuffer_ ~= x;
-        vertexArrayBuffer_ ~= y;
-        vertexArrayBuffer_ ~= z;
-        return result;
+    uint addAttributes(VertexAttributes attributes) {
+        immutable result = vertexAttributesArray_.length;
+        vertexAttributesArray_ ~= attributes;
+        return cast(uint) result;
     }
-    void addColor(Number r, Number g, Number b) {
-        colorArrayBuffer_ ~= r;
-        colorArrayBuffer_ ~= g;
-        colorArrayBuffer_ ~= b;
-    }
-    void addIndex(uint i) {indexElementArrayBuffer_ ~= i;}
 
-    void enable(
-            VertexAttribute attribute,
-            GLuint bufferId,
-            GLuint size,
-            GLenum type,
-            GLuint stride = 0,
-            GLuint offset = 0) const {
-        glEnableVertexAttribArray(attribute);
+    void addIndex(uint i) {indexElementArray_ ~= i;}
 
-        glBindBuffer(GL_ARRAY_BUFFER, bufferId);
-        scope(exit) glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-        glVertexAttribPointer(attribute, size, type, GL_FALSE, stride, cast(const(GLvoid*)) offset);
-    }
+    alias VertexAttributesBuffer = VertexAttribute!VertexAttributes;
+    alias IndexElementArrayBuffer = VertexElementArrayBuffer!();
+    alias IndexElement = IndexElementArrayBuffer.Component;
 
     FaceTopology topology_;
-    Array!Number vertexArrayBuffer_;
-    Array!Number colorArrayBuffer_;
-    Array!uint indexElementArrayBuffer_;
-    GLuint vertexArrayId_;
-    GLuint vertexArrayBufferId_;
-    GLuint colorArrayBufferId_;
-    GLuint indexElementArrayBufferId_;
+    Array!VertexAttributes vertexAttributesArray_;
+    Array!IndexElement indexElementArray_;
+
+    VertexAttributesBuffer vertexAttributesArrayBuffer_;
+    IndexElementArrayBuffer indexElementArrayBuffer_;
+    VertexArrayObject vertexArrayObject_;
 }
 
