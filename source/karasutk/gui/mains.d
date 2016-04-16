@@ -14,7 +14,7 @@ import derelict.sdl2.sdl;
 import derelict.opengl3.gl3 : DerelictGL3;
 
 import karasutk.dbg : dwritefln;
-import karasutk.gui.sdl : enforceSDL;
+import karasutk.gui.sdl : enforceSdl;
 import karasutk.gui.application;
 import karasutk.gui.event;
 import karasutk.gui.mesh;
@@ -57,7 +57,7 @@ void doGuiMain(F)(ref const(GuiOptions) options, F mainFunction) if(isMainFuncti
     DerelictGL3.load();
     scope(exit) DerelictGL3.unload();
 
-    enforceSDL(SDL_Init(SDL_INIT_EVERYTHING) == 0);
+    enforceSdl(SDL_Init(SDL_INIT_EVERYTHING) == 0);
     scope(exit) SDL_Quit();
 
     // set up OpenGL
@@ -65,7 +65,7 @@ void doGuiMain(F)(ref const(GuiOptions) options, F mainFunction) if(isMainFuncti
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 
     // create the main window
-    auto window = enforceSDL(SDL_CreateWindow(
+    auto window = enforceSdl(SDL_CreateWindow(
         toStringz(options.windowTitle),
         options.windowCenterX ? SDL_WINDOWPOS_CENTERED : options.windowPositionX,
         options.windowCenterY ? SDL_WINDOWPOS_CENTERED : options.windowPositionY,
@@ -75,7 +75,7 @@ void doGuiMain(F)(ref const(GuiOptions) options, F mainFunction) if(isMainFuncti
     scope(exit) SDL_DestroyWindow(window);
 
     // create the OpenGL context.
-    auto context = enforceSDL(SDL_GL_CreateContext(window));
+    auto context = enforceSdl(SDL_GL_CreateContext(window));
     scope(exit) SDL_GL_DeleteContext(context);
 
     // enable OpenGL3

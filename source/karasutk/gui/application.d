@@ -41,6 +41,8 @@ abstract class Application {
         uint windowHeight();
     }
 
+    void quit();
+
 private:
     EventQueue eventQueue_;
     MeshFactory meshFactory_;
@@ -89,6 +91,12 @@ class SdlApplication : Application {
             SDL_GetWindowSize(cast(SDL_Window*) window_, cast(int*) null, &result);
             return result;
         }
+    }
+
+    override void quit() {
+        SDL_Event event;
+        event.type = SDL_QUIT;
+        enforceSdl(SDL_PushEvent(&event));
     }
 
 private:
