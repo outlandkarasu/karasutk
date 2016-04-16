@@ -129,7 +129,7 @@ override:
 
     int opApply(int delegate(ref Pixel) dg) {
         int result = 0;
-        foreach(p; pixels_) {
+        foreach(ref p; pixels_) {
             result = dg(p);
             if(result) {
                 break;
@@ -142,7 +142,7 @@ override:
         int result = 0;
         size_t x = 0;
         size_t y = 0;
-        foreach(p; pixels_) {
+        foreach(ref p; pixels_) {
             result = dg(x, y, p);
             if(result) {
                 break;
