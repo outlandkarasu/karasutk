@@ -51,6 +51,7 @@ interface Texture2d(P) : GpuAsset {
     // support foreach statement
     int opApply(int delegate(ref Pixel) dg);
     int opApply(int delegate(size_t x, size_t y, ref Pixel) dg);
+    int opApply(int delegate(size_t y, Pixel[]) dg);
 
     /// fill this texture by a color
     void fill(Pixel p);
@@ -153,6 +154,18 @@ override:
             if(x == width_) {
                 x = 0;
                 ++y;
+            }
+        }
+        return result;
+    }
+
+    int opApply(int delegate(size_t y, Pixel[]) dg) {
+        int result = 0;
+        for(size_t y = 0; y < height_; ++y) {
+            immutable pos = y * width_;
+            result = dg(y, pixels_[pos .. pos + width_]);
+            if(result) {
+                break;
             }
         }
         return result;
