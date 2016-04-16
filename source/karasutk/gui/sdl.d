@@ -15,7 +15,7 @@ import derelict.sdl2.sdl : SDL_GetError;
 /**
  *  SDL related exceptions.
  */
-class SDLException : Exception {
+class SdlException : Exception {
     @nogc @safe pure nothrow this(
             string msg,
             string file = __FILE__,
@@ -34,14 +34,14 @@ class SDLException : Exception {
 }
 
 /// Enforce that the SDL not have error.
-T enforceSDL(T)(
+T enforceSdl(T)(
         T value,
         lazy const(char)[] msg = null,
         string file = __FILE__,
         size_t line = __LINE__) if (is(typeof((){if(!value){}}))) {
     if(!value) {
         auto errorMessage = format("%s : %s", fromStringz(SDL_GetError()), msg);
-        throw new SDLException(errorMessage, file, line);
+        throw new SdlException(errorMessage, file, line);
     }
     return value;
 }
