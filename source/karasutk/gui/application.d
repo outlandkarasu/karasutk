@@ -36,6 +36,11 @@ abstract class Application {
     /// draw next frame
     abstract void drawFrame(void delegate() dg);
 
+    @property const {
+        uint windowWidth();
+        uint windowHeight();
+    }
+
 private:
     EventQueue eventQueue_;
     MeshFactory meshFactory_;
@@ -69,6 +74,21 @@ class SdlApplication : Application {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         dg();
+    }
+
+    override @property const {
+
+        uint windowWidth() {
+            int result = 0;
+            SDL_GetWindowSize(cast(SDL_Window*) window_, &result, cast(int*) null);
+            return result;
+        }
+
+        uint windowHeight() {
+            int result = 0;
+            SDL_GetWindowSize(cast(SDL_Window*) window_, cast(int*) null, &result);
+            return result;
+        }
     }
 
 private:
