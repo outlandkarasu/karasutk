@@ -8,6 +8,7 @@
 module karasutk.gui.context;
 
 import karasutk.gui.aliases;
+import karasutk.gui.mesh;
 
 /// application objects holder.
 abstract class Context {

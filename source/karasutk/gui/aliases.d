@@ -16,7 +16,6 @@ import karasutk.gui.texture;
 alias KeyCode = SdlKeyCode;
 
 alias EventQueue = SdlEventQueue;
-alias MeshFactory = SdlMeshFactory;
 alias ShaderFactory = SdlShaderFactory;
 alias TextureFactory = SdlTextureFactory;
 
