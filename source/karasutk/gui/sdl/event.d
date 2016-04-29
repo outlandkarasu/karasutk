@@ -13,7 +13,7 @@ import karasutk.gui.sdl.keycode;
 
 import derelict.sdl2.sdl;
 
-class SdlEventQueue : EventQueue {
+class SdlEventQueue : AbstractEventQueue {
 
     override EventResult process() @system {
         SDL_Event event;

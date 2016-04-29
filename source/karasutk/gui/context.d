@@ -8,11 +8,13 @@
 module karasutk.gui.context;
 
 import karasutk.gui.aliases;
+import karasutk.gui.event;
 import karasutk.gui.mesh;
 import karasutk.gui.shader;
+import karasutk.gui.texture;
 
 /// application objects holder.
-abstract class Context {
+abstract class AbstractContext {
 
     this(EventQueue eventQueue,
             MeshFactory meshFactory,
@@ -48,3 +50,5 @@ private:
     ShaderFactory shaderFactory_;
 }
 
+import karasutk.gui.sdl.context : SdlContext;
+alias Context = SdlContext;

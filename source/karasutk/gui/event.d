@@ -38,7 +38,7 @@ struct KeyEvent {
 }
 
 /// GUI event queue 
-abstract class EventQueue {
+abstract class AbstractEventQueue {
 
     /// check event handler type
     enum isEventHandlable(H, E)
@@ -80,4 +80,7 @@ private:
     EventHandler!KeyEvent keyEvent_;
     EventHandler!QuitEvent quitEvent_;
 }
+
+import karasutk.gui.sdl.event;
+alias EventQueue = SdlEventQueue;
 

@@ -10,15 +10,15 @@ module karasutk.gui.sdl.context;
 import karasutk.gui.context;
 
 import karasutk.gui.sdl.event;
-import karasutk.gui.mesh;
-import karasutk.gui.shader;
-import karasutk.gui.texture;
+import karasutk.gui.sdl.mesh;
+import karasutk.gui.sdl.shader;
+import karasutk.gui.sdl.texture;
 import karasutk.gui.sdl.utils;
 
 import derelict.sdl2.sdl;
 import derelict.opengl3.gl3;
 
-class SdlContext : Context {
+class SdlContext : AbstractContext {
 
     this(SDL_Window* window) @safe {
         super(new SdlEventQueue(),
