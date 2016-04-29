@@ -63,7 +63,10 @@ alias RgbTexture2d = Texture2d!(Rgb);
 alias RgbaTexture2d = Texture2d!(Rgba);
 
 /// Texture factory interface
-interface TextureFactory {
+interface TextureFactory(RGBT, RGBAT) {
+
+    alias RgbTexture2d = RGBT;
+    alias RgbaTexture2d = RGBAT;
 
     /// make a RGB texture
     RgbTexture2d makeRgbTexture2d(size_t width, size_t height);
@@ -74,7 +77,8 @@ interface TextureFactory {
 
 package:
 
-class SdlTextureFactory : TextureFactory {
+class SdlTextureFactory
+        : TextureFactory!(SdlTexture2d!Rgb, SdlTexture2d!Rgba) {
 
     RgbTexture2d makeRgbTexture2d(size_t width, size_t height) {
         return new SdlTexture2d!Rgb(width, height);
