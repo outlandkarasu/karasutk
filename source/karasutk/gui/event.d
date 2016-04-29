@@ -9,7 +9,7 @@ module karasutk.gui.event;
 
 import std.traits : isCallable, isImplicitlyConvertible, Parameters;
 
-import karasutk.gui.aliases;
+import karasutk.gui.keycode;
 
 /// event queue status result
 enum EventResult {
@@ -81,6 +81,6 @@ private:
     EventHandler!QuitEvent quitEvent_;
 }
 
-import karasutk.gui.sdl.event;
+import karasutk.gui.sdl.event : SdlEventQueue;
 alias EventQueue = SdlEventQueue;
 
