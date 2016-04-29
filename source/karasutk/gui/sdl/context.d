@@ -11,7 +11,6 @@ import karasutk.gui.context;
 
 import karasutk.gui.sdl.event;
 import karasutk.gui.sdl.mesh;
-import karasutk.gui.sdl.shader;
 import karasutk.gui.sdl.texture;
 import karasutk.gui.sdl.utils;
 
@@ -23,7 +22,6 @@ class SdlContext : AbstractContext {
     this(SDL_Window* window) @safe {
         super(new SdlEventQueue(),
                 new SdlMeshFactory(),
-                new SdlShaderFactory(),
                 new SdlTextureFactory());
         this.window_ = window;
     }

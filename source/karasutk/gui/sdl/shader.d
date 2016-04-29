@@ -8,20 +8,14 @@
 module karasutk.gui.sdl.shader;
 
 import karasutk.gui.shader;
+import karasutk.gui.sdl.context : SdlContext;
 import karasutk.gui.sdl.gl : GlException, checkGlError;
 
 import derelict.opengl3.gl3;
 
-class SdlShaderFactory : AbstractShaderFactory!SdlShader {
-
-    Shader makeShader(const(ShaderSource) source) {
-        return new SdlShader(source);
-    }
-}
-
 class SdlShader : AbstractShader {
 
-    this(ref const(ShaderSource) source) {
+    this(SdlContext context, ShaderSource source) {
         this.source_ = source;
     }
 

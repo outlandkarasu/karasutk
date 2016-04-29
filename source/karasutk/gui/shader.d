@@ -46,7 +46,6 @@ interface AbstractShaderFactory(S) {
     Shader makeShader(const(ShaderSource) source);
 }
 
-import karasutk.gui.sdl.shader : SdlShaderFactory, SdlShader;
-alias ShaderFactory = SdlShaderFactory;
+import karasutk.gui.sdl.shader : SdlShader;
 alias Shader = SdlShader;
 
