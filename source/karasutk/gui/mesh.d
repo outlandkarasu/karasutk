@@ -45,7 +45,9 @@ struct VertexAttributes {
 }
 
 /// Mesh factory interface.
-interface MeshFactory {
+interface MeshFactory(M) {
+
+    alias Mesh = M;
 
     /// vertex attirbutes appender function.
     alias AttributesAppender = uint delegate(VertexAttributes);
@@ -71,7 +73,7 @@ interface MeshFactory {
 
 package:
 
-class SdlMeshFactory : MeshFactory {
+class SdlMeshFactory : MeshFactory!SdlMesh {
 
     /// add points by user delegate.
     Mesh makePoints(void delegate(AttributesAppender, PointAppender) dg) {
