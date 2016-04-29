@@ -9,9 +9,6 @@ module karasutk.gui.mesh;
 
 import karasutk.gui.gpu : GpuAsset;
 
-/// number for mesh coordinate
-alias Number = float;
-
 /// Mesh interface
 interface AbstractMesh : GpuAsset {
 
