@@ -9,6 +9,7 @@ module karasutk.gui.context;
 
 import karasutk.gui.aliases;
 import karasutk.gui.mesh;
+import karasutk.gui.shader;
 
 /// application objects holder.
 abstract class Context {
