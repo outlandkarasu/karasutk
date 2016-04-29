@@ -68,10 +68,16 @@ abstract class EventQueue {
         quitEvent_ = toEventHandler!KeyEvent(f);
     }
 
-    void dispatchKeyEvent(KeyEvent event) {if(keyEvent_) {keyEvent_(event);}}
-    EventHandler!KeyEvent keyEvent_;
+    void dispatchKeyEvent(KeyEvent event) {
+        if(keyEvent_) {keyEvent_(event);}
+    }
 
-    void dispatchQuitEvent(QuitEvent event) {if(quitEvent_) {quitEvent_(event);}}
+    void dispatchQuitEvent(QuitEvent event) {
+        if(quitEvent_) {quitEvent_(event);}
+    }
+
+private:
+    EventHandler!KeyEvent keyEvent_;
     EventHandler!QuitEvent quitEvent_;
 }
 
