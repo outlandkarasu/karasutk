@@ -40,7 +40,9 @@ interface Shader : GpuAsset {
 }
 
 /// shader factory 
-interface ShaderFactory {
+interface ShaderFactory(S) {
+
+    alias Shader = S;
 
     /// make from source
     Shader makeShader(const(ShaderSource) source);
@@ -48,7 +50,7 @@ interface ShaderFactory {
 
 package:
 
-class SdlShaderFactory : ShaderFactory {
+class SdlShaderFactory : ShaderFactory!SdlShader {
 
     Shader makeShader(const(ShaderSource) source) {
         return new SdlShader(source);

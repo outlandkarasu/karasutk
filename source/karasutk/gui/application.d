@@ -19,7 +19,10 @@ import derelict.opengl3.gl3;
 /// application objects holder.
 abstract class Application {
 
-    this(EventQueue eventQueue, SdlMeshFactory meshFactory, ShaderFactory shaderFactory, TextureFactory textureFactory) @safe @nogc nothrow {
+    this(EventQueue eventQueue,
+            SdlMeshFactory meshFactory,
+            SdlShaderFactory shaderFactory,
+            TextureFactory textureFactory) @safe @nogc nothrow {
         this.eventQueue_ = eventQueue;
         this.meshFactory_ = meshFactory;
         this.textureFactory_ = textureFactory;
@@ -30,7 +33,7 @@ abstract class Application {
         EventQueue eventQueue() {return eventQueue_;}
         SdlMeshFactory meshFactory() {return meshFactory_;}
         TextureFactory textureFactory() {return textureFactory_;}
-        ShaderFactory shaderFactory() {return shaderFactory_;}
+        SdlShaderFactory shaderFactory() {return shaderFactory_;}
     }
 
     /// draw next frame
@@ -47,7 +50,7 @@ private:
     EventQueue eventQueue_;
     SdlMeshFactory meshFactory_;
     TextureFactory textureFactory_;
-    ShaderFactory shaderFactory_;
+    SdlShaderFactory shaderFactory_;
 }
 
 package:
