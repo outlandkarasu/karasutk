@@ -4,7 +4,7 @@
  *  Authors: outland.karasu
  *  License: BSL-1.0
  */ 
-module karasutk.gui.gl;
+module karasutk.gui.sdl.gl;
 
 import std.array : join;
 import std.algorithm : map;

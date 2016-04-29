@@ -16,7 +16,7 @@ import karasutk.gui.gpu :
     GpuAsset,
     GpuReleasableAsset;
 
-import karasutk.gui.gl :
+import karasutk.gui.sdl.gl :
     checkGlError,
     VertexAttribute,
     VertexElementArrayBuffer,

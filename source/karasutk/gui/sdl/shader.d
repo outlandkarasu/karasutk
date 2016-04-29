@@ -8,7 +8,7 @@
 module karasutk.gui.sdl.shader;
 
 import karasutk.gui.shader;
-import karasutk.gui.gl : GlException, checkGlError;
+import karasutk.gui.sdl.gl : GlException, checkGlError;
 
 import derelict.opengl3.gl3;
 

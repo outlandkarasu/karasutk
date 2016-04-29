@@ -13,7 +13,7 @@ import std.experimental.allocator.mallocator : Mallocator;
 
 import derelict.opengl3.gl3;
 
-import karasutk.gui.gl : checkGlError;
+import karasutk.gui.sdl.gl : checkGlError;
 
 class SdlTextureFactory : AbstractTextureFactory!(
         SdlTexture2d!Rgb, SdlTexture2d!Rgba) {

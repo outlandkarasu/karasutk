@@ -7,6 +7,8 @@
 
 module karasutk.gui.sdl.keycode;
 
+import karasutk.gui.keycode;
+
 import derelict.sdl2.sdl;
 
 enum SdlKeyCode {
