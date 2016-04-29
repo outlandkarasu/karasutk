@@ -9,7 +9,7 @@ module karasutk.gui.event;
 
 import std.traits : isCallable, isImplicitlyConvertible, Parameters;
 
-import derelict.sdl2.sdl;
+import karasutk.gui.aliases;
 
 /// event queue status result
 enum EventResult {
@@ -28,16 +28,13 @@ struct KeyEvent {
     /// event type
     alias Type = int;
 
-    /// key code type
-    alias Code = SdlKeyCode;
-
     enum : Type {
         UP,
         DOWN,
     }
 
     Type type;
-    Code code;
+    KeyCode keyCode;
 }
 
 /// GUI event queue 
@@ -71,44 +68,10 @@ abstract class EventQueue {
         quitEvent_ = toEventHandler!KeyEvent(f);
     }
 
-private:
-
     void dispatchKeyEvent(KeyEvent event) {if(keyEvent_) {keyEvent_(event);}}
     EventHandler!KeyEvent keyEvent_;
 
     void dispatchQuitEvent(QuitEvent event) {if(quitEvent_) {quitEvent_(event);}}
     EventHandler!QuitEvent quitEvent_;
-}
-
-package:
-
-class SdlEventQueue : EventQueue {
-
-    override EventResult process() @system {
-        SDL_Event event;
-        if(!SDL_PollEvent(&event)) {
-            return EventResult.EMPTY;
-        }
-
-        switch(event.type) {
-        case SDL_KEYDOWN:
-            dispatchKeyEvent(KeyEvent(KeyEvent.DOWN, cast(SdlKeyCode) event.key.keysym.sym));
-            break;
-        case SDL_KEYUP:
-            dispatchKeyEvent(KeyEvent(KeyEvent.UP, cast(SdlKeyCode) event.key.keysym.sym));
-            break;
-        case SDL_QUIT:
-            dispatchQuitEvent(QuitEvent());
-            return EventResult.QUIT;
-        default:
-            break;
-        }
-
-        return EventResult.NOT_EMPTY;
-    }
-}
-
-enum SdlKeyCode {
-    ESC = SDLK_ESCAPE,
 }
 
