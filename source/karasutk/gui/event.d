@@ -29,7 +29,7 @@ struct KeyEvent {
     alias Type = int;
 
     /// key code type
-    alias Code = uint;
+    alias Code = SdlKeyCode;
 
     enum : Type {
         UP,
@@ -92,10 +92,10 @@ class SdlEventQueue : EventQueue {
 
         switch(event.type) {
         case SDL_KEYDOWN:
-            dispatchKeyEvent(KeyEvent(KeyEvent.DOWN, event.key.keysym.sym));
+            dispatchKeyEvent(KeyEvent(KeyEvent.DOWN, cast(SdlKeyCode) event.key.keysym.sym));
             break;
         case SDL_KEYUP:
-            dispatchKeyEvent(KeyEvent(KeyEvent.UP, event.key.keysym.sym));
+            dispatchKeyEvent(KeyEvent(KeyEvent.UP, cast(SdlKeyCode) event.key.keysym.sym));
             break;
         case SDL_QUIT:
             dispatchQuitEvent(QuitEvent());
@@ -106,5 +106,9 @@ class SdlEventQueue : EventQueue {
 
         return EventResult.NOT_EMPTY;
     }
+}
+
+enum SdlKeyCode {
+    ESC = SDLK_ESCAPE,
 }
 
