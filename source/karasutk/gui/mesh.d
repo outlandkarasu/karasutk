@@ -13,10 +13,9 @@ import std.container : Array;
 import std.traits : isIntegral;
 
 /// generic buffer.
-class Buffer(E, F) {
+class Buffer(E) {
 
     alias Element = E;
-    alias Field = F;
 
     /// default constructor.
     this() {}
@@ -26,9 +25,6 @@ class Buffer(E, F) {
 
     @property pure nothrow @safe @nogc const {
         size_t length() {return array_.length;}
-        size_t fieldCount() {
-            return array_.length * FIELDS_PER_ELEMENT;
-        }
     }
 
     /// reserve memory buffer.
@@ -37,11 +33,6 @@ class Buffer(E, F) {
     /// return arrayslice
     const(Element)[] opSlice() const {
         return (&array_[0])[0 .. array_.length];
-    }
-
-    /// return field slice
-    const(Field)[] fieldSlice() const {
-        return (cast(const(Field)*)&array_[0])[0 .. fieldCount];
     }
 
     /// append new stuff.
@@ -58,29 +49,17 @@ protected:
     void add(E)(E e) {array_ ~= e;}
 
 private:
-    enum FIELDS_PER_ELEMENT = Element.sizeof / Field.sizeof;
     Array!Element array_;
 }
 
 /// vertices array
-alias Vertices(V) = Buffer!(V, V);
+alias Vertices(V) = Buffer!V;
 
-/// face topology types
-enum FaceTopology {
-    POINTS,
-    LINES,
-    TRIANGLES,
-}
-
-/// generic index buffer
-class IndexBuffer(T, F, FaceTopology FT) : Buffer!(T, F) {
-    enum TOPOLOGY = FT;
-    this() {}
-    this(size_t cap) {super(cap);}
-}
+/// indices array
+alias Indices(I) = Buffer!I;
 
 /// point indices buffer 
-alias Points(T) = IndexBuffer!(T, T, FaceTopology.POINTS);
+alias Points(T) = Indices!T;
 
 /// line index
 struct Line(T) {
@@ -91,7 +70,7 @@ align(1):
 }
 
 /// line indices array
-alias Lines(T) = IndexBuffer!(Line!T, T, FaceTopology.LINES);
+alias Lines(T) = Indices!(Line!T);
 
 /// triangle index
 struct Triangle(T) {
@@ -103,10 +82,35 @@ align(1):
 }
 
 /// triangle indices array
-alias Triangles(T) = IndexBuffer!(Triangle!T, T, FaceTopology.TRIANGLES);
+alias Triangles(T) = Indices!(Triangle!T);
+
+/// index types
+alias IndexType(I : Line!(I)) = I;
+alias IndexType(I : Triangle!(I)) = I;
+alias IndexType(F) = F;
 
 /// Mesh interface
-interface AbstractMesh {
+interface AbstractMesh(F) {
+
+    alias Face = F;
+    alias Index = IndexType!F;
+
+    /// face topology types
+    enum Topology {
+        POINTS,
+        LINES,
+        TRIANGLES,
+    }
+
+    static if(is(F I : Line!I)) {
+        enum TOPOLOGY = Topology.LINES;
+    } else static if(is(F I : Triangle!I)) {
+        enum TOPOLOGY = Topology.TRIANGLES;
+    } else static if(isIntegral!F) {
+        enum TOPOLOGY = Topology.POINTS;
+    } else {
+        static assert(false);
+    }
 
     /// draw to display
     void draw();
@@ -122,8 +126,7 @@ import karasutk.gui.sdl.mesh : SdlMesh;
 alias Mesh = SdlMesh;
 
 /// make mesh object
-Mesh!(V, F) makeMesh(V, E, F, FaceTopology FT)(
-        Vertices!V vertices, IndexBuffer!(E, F, FT) indices) {
+Mesh!(V, F) makeMesh(V, F)(Vertices!V vertices, Indices!F indices) {
     return new Mesh!(V, F)(vertices, indices);
 }
 

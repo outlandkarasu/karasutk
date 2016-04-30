@@ -65,8 +65,8 @@ class VertexAttribute(T) : BufferData!(GL_ARRAY_BUFFER, T) {
 }
 
 /// OpenGL vertex element array buffer class
-class VertexElementArrayBuffer(T)
-        : BufferData!(GL_ELEMENT_ARRAY_BUFFER, T) {
+class VertexElementArrayBuffer(I)
+        : BufferData!(GL_ELEMENT_ARRAY_BUFFER, IndexType!I) {
 
     /**
      *  Params:
@@ -78,7 +78,8 @@ class VertexElementArrayBuffer(T)
     void draw() {
         bind();
         scope(exit) unbind();
-        glDrawElements(mode_, cast(uint) this.length, GlType!T, null);
+        glDrawElements(
+                mode_, cast(uint) length, GlType!Component, null);
         checkGlError();
     }
 
@@ -115,24 +116,10 @@ private:
     GLuint id_;
 }
 
-/// FaceTopology to GLenum
-GLenum glType(FaceTopology topology) @safe pure nothrow @nogc {
-    final switch(topology) {
-    case FaceTopology.POINTS:
-        return GL_POINTS;
-    case FaceTopology.LINES:
-        return GL_LINES;
-    case FaceTopology.TRIANGLES:
-        return GL_TRIANGLES;
-    }
-}
-
 /// mesh class for SDL
-class SdlMesh(V, I) : AbstractMesh {
+class SdlMesh(V, F) : AbstractMesh!(F) {
 
-    this(E, FaceTopology FT)(Vertices!V vertices, IndexBuffer!(E, I, FT) indices) {
-        this.topology_ = FT;
-
+    this(const(Vertices!V) vertices, const(Indices!F) indices) {
         // create VAO
         assert(vao_ is null);
         vao_ = new VertexArrayObject();
@@ -146,8 +133,10 @@ class SdlMesh(V, I) : AbstractMesh {
         vertices_.transfer(vertices[]);
 
         // transfer indicies to a GPU buffer.
-        indices_ = new GlIndices(topology_.glType); 
-        indices_.transfer(indices.fieldSlice);
+        indices_ = new GlIndices(GL_TOPOLOGY); 
+        auto slice = indices[];
+        auto ilen = indices.length * Face.sizeof / Index.sizeof;
+        indices_.transfer((cast(const(Index)*)slice.ptr)[0 .. ilen]);
     }
 
     ~this() {
@@ -164,10 +153,20 @@ class SdlMesh(V, I) : AbstractMesh {
 
 private:
 
-    alias GlVertices = VertexAttribute!V;
-    alias GlIndices = VertexElementArrayBuffer!I;
+    /// Topology to GLenum
+    static if(TOPOLOGY == Topology.POINTS) {
+        enum GL_TOPOLOGY = GL_POINTS;
+    } else static if(TOPOLOGY == Topology.LINES) {
+        enum GL_TOPOLOGY = GL_LINES;
+    } else static if(TOPOLOGY == Topology.TRIANGLES) {
+        enum GL_TOPOLOGY = GL_TRIANGLES;
+    } else {
+        static assert(false);
+    }
 
-    FaceTopology topology_;
+    alias GlVertices = VertexAttribute!V;
+    alias GlIndices = VertexElementArrayBuffer!F;
+
     VertexArrayObject vao_;
     GlVertices vertices_;
     GlIndices indices_;
