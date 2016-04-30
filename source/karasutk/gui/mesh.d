@@ -10,7 +10,7 @@ module karasutk.gui.mesh;
 import karasutk.gui.gpu : GpuAsset;
 
 import std.container : Array;
-import std.traits : isIntegral;
+import std.traits : isIntegral, isUnsigned;
 
 /// generic buffer.
 class Buffer(E) {
@@ -25,6 +25,22 @@ class Buffer(E) {
 
     @property pure nothrow @safe @nogc const {
         size_t length() {return array_.length;}
+    }
+
+    inout ref inout(E) opIndex(size_t i) {return array_[i];}
+    void opIndexAssign(E value, size_t i) {array_[i] = value;}
+    void opIndexOpAssign(string op)(E value, size_t i) {
+        mixin("array_[i] " ~ op ~ " value");
+    }
+    void opSliceAssign(E value) {array_[] = value;}
+    void opSliceAssign(E value, size_t i, size_t j) {
+        array_[i..j] = value;
+    }
+    void opSliceOpAssign(string op)(E value) {
+        mixin("array_[] " ~ op ~ " value");
+    }
+    void opSliceOpAssign(string op)(E value, size_t i, size_t j) {
+        mixin("array_[i..j] " ~ op ~ " value");
     }
 
     /// reserve memory buffer.
