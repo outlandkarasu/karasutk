@@ -44,7 +44,7 @@ class Buffer(E) {
     void reserve(size_t n) {array_.reserve(n);}
 
     /// return arrayslice
-    const(Element)[] opSlice() const {
+    inout(Element)[] opSlice() inout {
         return (&array_[0])[0 .. array_.length];
     }
 
@@ -55,6 +55,17 @@ class Buffer(E) {
 
     /// clear vertices.
     void clear() {array_.clear();}
+
+    int opApply(int delegate(ref Element) dg) {
+        int result = 0;
+        foreach(ref p; array_) {
+            result = dg(p);
+            if(result) {
+                break;
+            }
+        }
+        return result;
+    }
 
 private:
     Array!Element array_;
