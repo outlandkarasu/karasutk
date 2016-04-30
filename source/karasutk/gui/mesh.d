@@ -73,31 +73,14 @@ enum FaceTopology {
 }
 
 /// generic index buffer
-class IndexBuffer(T, F) : Buffer!(T, F) {
-
-    this(FaceTopology topology) {
-        this.topology_ = topology;
-    }
-
-    this(FaceTopology topology, size_t cap) {
-        super(cap);
-        this.topology_ = topology;
-    }
-
-    @property FaceTopology topology() const @safe pure nothrow {
-        return topology_;
-    }
-
-private:
-    FaceTopology topology_;
+class IndexBuffer(T, F, FaceTopology FT) : Buffer!(T, F) {
+    enum TOPOLOGY = FT;
+    this() {}
+    this(size_t cap) {super(cap);}
 }
 
 /// point indices buffer 
-class Points(T) : IndexBuffer!(T, T) {
-    enum TOPOLOGY = FaceTopology.POINTS;
-    this() {super(TOPOLOGY);}
-    this(size_t cap) {super(TOPOLOGY, cap);}
-}
+alias Points(T) = IndexBuffer!(T, T, FaceTopology.POINTS);
 
 /// line index
 struct Line(T) {
@@ -108,11 +91,7 @@ align(1):
 }
 
 /// line indices array
-class Lines(T) : IndexBuffer!(Line!T, T) {
-    enum TOPOLOGY = FaceTopology.LINES;
-    this() {super(TOPOLOGY);}
-    this(size_t cap) {super(TOPOLOGY, cap);}
-}
+alias Lines(T) = IndexBuffer!(Line!T, T, FaceTopology.LINES);
 
 /// triangle index
 struct Triangle(T) {
@@ -124,11 +103,7 @@ align(1):
 }
 
 /// triangle indices array
-class Triangles(T) : IndexBuffer!(Triangle!T, T) {
-    enum TOPOLOGY = FaceTopology.TRIANGLES;
-    this() {super(TOPOLOGY);}
-    this(size_t cap) {super(TOPOLOGY, cap);}
-}
+alias Triangles(T) = IndexBuffer!(Triangle!T, T, FaceTopology.TRIANGLES);
 
 /// Mesh interface
 interface AbstractMesh {
@@ -147,8 +122,8 @@ import karasutk.gui.sdl.mesh : SdlMesh;
 alias Mesh = SdlMesh;
 
 /// make mesh object
-Mesh!(V, I) makeMesh(V, I)(
-        Vertices!V vertices, IndexBuffer!I indices) {
-    return new Mesh!(V, I)(vertices, indices);
+Mesh!(V, F) makeMesh(V, E, F, FaceTopology FT)(
+        Vertices!V vertices, IndexBuffer!(E, F, FT) indices) {
+    return new Mesh!(V, F)(vertices, indices);
 }
 

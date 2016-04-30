@@ -130,8 +130,8 @@ GLenum glType(FaceTopology topology) @safe pure nothrow @nogc {
 /// mesh class for SDL
 class SdlMesh(V, I) : AbstractMesh {
 
-    this(T)(Vertices!V vertices, T indices) {
-        this.topology_ = indices.topology;
+    this(E, FaceTopology FT)(Vertices!V vertices, IndexBuffer!(E, I, FT) indices) {
+        this.topology_ = FT;
 
         // create VAO
         assert(vao_ is null);
