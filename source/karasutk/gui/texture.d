@@ -69,6 +69,7 @@ abstract class AbstractTexture2d(P) {
         return result;
     }
 
+    /// apply per pixel with position
     int opApply(int delegate(size_t x, size_t y, ref Pixel) dg) {
         int result = 0;
         size_t x = 0;
@@ -89,6 +90,7 @@ abstract class AbstractTexture2d(P) {
         return result;
     }
 
+    /// apply per line with rows
     int opApply(int delegate(size_t y, Pixel[]) dg) {
         int result = 0;
         for(size_t y = 0; y < height_; ++y) {
