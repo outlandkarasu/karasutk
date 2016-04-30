@@ -56,11 +56,6 @@ class Buffer(E) {
     /// clear vertices.
     void clear() {array_.clear();}
 
-protected:
-
-    /// append new elements.
-    void add(E)(E e) {array_ ~= e;}
-
 private:
     Array!Element array_;
 }
