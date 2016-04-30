@@ -18,17 +18,6 @@ class SdlShader : AbstractShader {
 
     this(SdlContext context, ShaderSource source) {
         this.source_ = source;
-    }
-
-    ~this() @nogc nothrow {
-        releaseFromGpu();
-    }
-
-    /// transfer data to GPU.
-    void transferToGpu() {
-        // release old program
-        releaseFromGpu();
-
         programId_ = compileProgram(source_);
         texLocation_ = glGetUniformLocation(programId_, "tex");
         modelLocation_ = glGetUniformLocation(programId_, "M");
@@ -37,17 +26,14 @@ class SdlShader : AbstractShader {
         mvpLocation_ = glGetUniformLocation(programId_, "MVP");
     }
 
-    /// release data from GPU.
-    void releaseFromGpu() @nogc nothrow {
-        if(programId_) {
-            glDeleteProgram(programId_);
-            programId_ = 0;
-            texLocation_ = -1;
-            modelLocation_ = -1;
-            viewLocation_ = -1;
-            projectionLocation_ = -1;
-            mvpLocation_ = -1;
-        }
+    ~this() @nogc nothrow {
+        glDeleteProgram(programId_);
+        programId_ = 0;
+        texLocation_ = -1;
+        modelLocation_ = -1;
+        viewLocation_ = -1;
+        projectionLocation_ = -1;
+        mvpLocation_ = -1;
     }
 
     /// do process during use program.

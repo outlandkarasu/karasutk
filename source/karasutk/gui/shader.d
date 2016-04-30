@@ -10,7 +10,6 @@ module karasutk.gui.shader;
 import std.stdio : writefln;
 
 import karasutk.gui.camera: Camera;
-import karasutk.gui.gpu : GpuAsset;
 import karasutk.gui.texture : GpuTexture2d, Rgb;
 
 import gl3n.linalg : mat4;
@@ -29,21 +28,12 @@ struct ShaderParameters {
 }
 
 /// shader placeholder
-interface AbstractShader : GpuAsset {
+interface AbstractShader {
 
     alias ParametersBinder = void delegate(ShaderParameters);
 
     /// do process during use program.
     void duringUse(void delegate(ParametersBinder) dg) const;
-}
-
-/// shader factory 
-interface AbstractShaderFactory(S) {
-
-    alias Shader = S;
-
-    /// make from source
-    Shader makeShader(const(ShaderSource) source);
 }
 
 import karasutk.gui.sdl.shader : SdlShader;
