@@ -17,11 +17,9 @@ import std.traits :
 
 import derelict.opengl3.gl3;
 
-import karasutk.gui.gpu : GpuAsset, GpuReleasableAsset;
 import karasutk.gui.sdl.gl :
     checkGlError,
     GlType,
-    BindableObject,
     BufferData;
 
 private alias ArrayElementOf(T : T[]) = T;
@@ -88,7 +86,7 @@ private:
 }
 
 /// OpenGL vertex array object class
-class VertexArrayObject : BindableObject {
+class VertexArrayObject {
 
     /// default constructor
     this() {
@@ -96,20 +94,20 @@ class VertexArrayObject : BindableObject {
         checkGlError();
     }
 
-    override void bind() {
-        glBindVertexArray(id_);
-        checkGlError();
-    }
-
-    override void unbind() nothrow @nogc {
-        glBindVertexArray(0);
-    }
-
-    void releaseFromGpu() nothrow @nogc {
+    ~this() nothrow @nogc {
         if(id_ != 0) {
             glDeleteVertexArrays(1, &id_);
             id_ = 0;
         }
+    }
+
+    void bind() {
+        glBindVertexArray(id_);
+        checkGlError();
+    }
+
+    void unbind() nothrow @nogc {
+        glBindVertexArray(0);
     }
 
 private:

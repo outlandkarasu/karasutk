@@ -8,7 +8,6 @@
 module karasutk.gui.mesh;
 
 import karasutk.gui.buffer : Buffer;
-import karasutk.gui.gpu : GpuAsset;
 
 import std.traits : isIntegral, isUnsigned;
 
