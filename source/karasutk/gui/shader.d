@@ -11,7 +11,7 @@ import std.stdio : writefln;
 
 import karasutk.gui.camera: Camera;
 import karasutk.gui.gpu : GpuAsset;
-import karasutk.gui.texture : Texture2d, Rgb;
+import karasutk.gui.texture : GpuTexture2d, Rgb;
 
 import gl3n.linalg : mat4;
 
@@ -23,7 +23,7 @@ struct ShaderSource {
 
 /// shader parameters
 struct ShaderParameters {
-    Texture2d!Rgb texture;
+    GpuTexture2d!Rgb texture;
     Camera camera;
     mat4 model;
 }

@@ -10,6 +10,7 @@ module karasutk.gui.sdl.shader;
 import karasutk.gui.shader;
 import karasutk.gui.sdl.context : SdlContext;
 import karasutk.gui.sdl.gl : GlException, checkGlError;
+import karasutk.gui.sdl.texture : SdlGpuTexture2d;
 
 import derelict.opengl3.gl3;
 
@@ -63,7 +64,7 @@ private:
         bindCamera(params.model, params.camera);
     }
 
-    void bindTexture(Texture2d!Rgb texture) const {
+    void bindTexture(SdlGpuTexture2d!Rgb texture) const {
         if(!texture) {
             return;
         }

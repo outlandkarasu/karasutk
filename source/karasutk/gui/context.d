@@ -14,15 +14,12 @@ import karasutk.gui.texture;
 /// application objects holder.
 abstract class AbstractContext {
 
-    this(EventQueue eventQueue,
-            TextureFactory textureFactory) @safe @nogc nothrow {
+    this(EventQueue eventQueue) @safe @nogc nothrow {
         this.eventQueue_ = eventQueue;
-        this.textureFactory_ = textureFactory;
     }
 
     @property @safe pure nothrow @nogc {
         EventQueue eventQueue() {return eventQueue_;}
-        TextureFactory textureFactory() {return textureFactory_;}
     }
 
     /// draw next frame
@@ -37,7 +34,6 @@ abstract class AbstractContext {
 
 private:
     EventQueue eventQueue_;
-    TextureFactory textureFactory_;
 }
 
 import karasutk.gui.sdl.context : SdlContext;

@@ -20,8 +20,7 @@ import derelict.opengl3.gl3;
 class SdlContext : AbstractContext {
 
     this(SDL_Window* window) @safe {
-        super(new SdlEventQueue(),
-                new SdlTextureFactory());
+        super(new SdlEventQueue());
         this.window_ = window;
     }
 

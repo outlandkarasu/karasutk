@@ -7,7 +7,7 @@
 
 module karasutk.gui.texture;
 
-import karasutk.gui.gpu : GpuAsset;
+import std.experimental.allocator.mallocator : Mallocator;
 
 /// RGB color structure
 struct Rgb {
@@ -26,50 +26,89 @@ align(1):
     ubyte a;
 }
 
-/// 2D texture interface
-interface AbstractTexture2d(P) : GpuAsset {
+/// abstract 2D texture class
+abstract class AbstractTexture2d(P) {
 
     /// pixel type
     alias Pixel = P;
 
-    // properties
-    @property const @safe pure nothrow @nogc {
-        size_t width();
-        size_t height();
-        size_t length();
-        Pixel opIndex(size_t x, size_t y);
-        int id();
+    this(size_t width, size_t height) @nogc {
+        this.width_ = width;
+        this.height_ = height;
+        this.pixels_ = cast(Pixel[]) Mallocator.instance.allocate(width * height * Pixel.sizeof);
     }
 
-    Pixel opIndexAssign(Pixel p, size_t x, size_t y) @safe @nogc;
+    ~this() @nogc {
+        Mallocator.instance.deallocate(pixels_);
+    }
+
+    // properties
+    @property @safe pure nothrow @nogc {
+        size_t width() const {return width_;}
+        size_t height() const {return height_;}
+        size_t length() const {return width_ * height_;}
+        inout(Pixel)* ptr() inout {return pixels_.ptr;}
+        ref inout(Pixel) opIndex(size_t x, size_t y) inout {
+            return pixels_[y * width_ + x];
+        }
+    }
+
+    void opIndexAssign(Pixel p, size_t x, size_t y) @safe @nogc {
+        pixels_[width_ * y + x] = p;
+    }
 
     // support foreach statement
-    int opApply(int delegate(ref Pixel) dg);
-    int opApply(int delegate(size_t x, size_t y, ref Pixel) dg);
-    int opApply(int delegate(size_t y, Pixel[]) dg);
+    int opApply(int delegate(ref Pixel) dg) {
+        int result = 0;
+        foreach(ref p; pixels_) {
+            result = dg(p);
+            if(result) {
+                break;
+            }
+        }
+        return result;
+    }
 
-    /// fill this texture by a color
-    void fill(Pixel p);
+    int opApply(int delegate(size_t x, size_t y, ref Pixel) dg) {
+        int result = 0;
+        size_t x = 0;
+        size_t y = 0;
+        foreach(ref p; pixels_) {
+            result = dg(x, y, p);
+            if(result) {
+                break;
+            }
 
-    void select();
+            // calculate next position
+            ++x;
+            if(x == width_) {
+                x = 0;
+                ++y;
+            }
+        }
+        return result;
+    }
+
+    int opApply(int delegate(size_t y, Pixel[]) dg) {
+        int result = 0;
+        for(size_t y = 0; y < height_; ++y) {
+            immutable pos = y * width_;
+            result = dg(y, pixels_[pos .. pos + width_]);
+            if(result) {
+                break;
+            }
+        }
+        return result;
+    }
+
+
+private:
+    Pixel[] pixels_;
+    size_t width_;
+    size_t height_;
 }
 
-/// Texture factory interface
-interface AbstractTextureFactory(RGBT, RGBAT) {
-
-    alias RgbTexture2d = RGBT;
-    alias RgbaTexture2d = RGBAT;
-
-    /// make a RGB texture
-    RgbTexture2d makeRgbTexture2d(size_t width, size_t height);
-
-    /// make a RGBA texture
-    RgbaTexture2d makeRgbaTexture2d(size_t width, size_t height);
-}
-
-import karasutk.gui.sdl.texture;
-alias TextureFactory = SdlTextureFactory;
+import karasutk.gui.sdl.texture : SdlTexture2d, SdlGpuTexture2d;
 alias Texture2d = SdlTexture2d;
-alias RgbTexture2d = Texture2d!(Rgb);
-alias RgbaTexture2d = Texture2d!(Rgba);
+alias GpuTexture2d = SdlGpuTexture2d;
 
