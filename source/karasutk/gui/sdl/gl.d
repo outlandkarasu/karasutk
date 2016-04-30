@@ -10,7 +10,6 @@ import std.array : join;
 import std.algorithm : map;
 import std.format : format;
 import std.stdio : writefln;
-import std.traits : Fields, FieldNameTuple, isStaticArray, isArray;
 
 import derelict.opengl3.gl3;
 
@@ -105,101 +104,6 @@ class BufferData(GLenum Target, T) : BindableObject {
 
 private:
     size_t length_;
-    GLuint id_;
-}
-
-alias ArrayElementOf(T : T[]) = T;
-
-/// OpenGL vertex attribute class
-class VertexAttribute(T)
-        : BufferData!(GL_ARRAY_BUFFER, T) {
-
-    static assert(is(T == struct));
-
-    /// trasfer buffer and register an attribute pointer.
-    override void transfer(const(Component)[] data) {
-        super.transfer(data);
-
-        bind();
-        scope(exit) unbind();
-
-        foreach(i, name; FieldNameTuple!Component) {
-            alias FieldType = Fields!Component[i];
-            static assert(isStaticArray!FieldType || !isArray!FieldType);
-            static if(isStaticArray!FieldType) {
-                enum ComponentSize = FieldType.length;
-                enum AttributeType = GlType!(ArrayElementOf!FieldType);
-            } else {
-                enum ComponentSize = 1;
-                enum AttributeType = GlType!FieldType;
-            }
-
-            enum Offset = mixin("T." ~ name ~ ".offsetof");
-
-            glEnableVertexAttribArray(i);
-            glVertexAttribPointer(
-                i,
-                ComponentSize,
-                AttributeType,
-                GL_FALSE,
-                Component.sizeof,
-                cast(const(GLvoid*))(0 + Offset));
-            checkGlError();
-        }
-    }
-}
-
-/// OpenGL vertex element array buffer class
-class VertexElementArrayBuffer(T = uint)
-        : BufferData!(GL_ELEMENT_ARRAY_BUFFER, T) {
-
-    /**
-     *  Params:
-     *      mode = element mode
-     */
-    this(GLenum mode) {
-        mode_ = mode;
-    }
-
-    /// draw elements
-    void draw() {
-        bind();
-        scope(exit) unbind();
-
-        glDrawElements(mode_, cast(uint) this.length, GlType!T, null);
-        checkGlError();
-    }
-
-private:
-    GLenum mode_;
-}
-
-/// OpenGL vertex array object class
-class VertexArrayObject : BindableObject {
-
-    /// default constructor
-    this() {
-        glGenVertexArrays(1, &id_);
-        checkGlError();
-    }
-
-    override void bind() {
-        glBindVertexArray(id_);
-        checkGlError();
-    }
-
-    override void unbind() nothrow @nogc {
-        glBindVertexArray(0);
-    }
-
-    void releaseFromGpu() nothrow @nogc {
-        if(id_ != 0) {
-            glDeleteVertexArrays(1, &id_);
-            id_ = 0;
-        }
-    }
-
-private:
     GLuint id_;
 }
 

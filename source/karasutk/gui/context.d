@@ -15,16 +15,13 @@ import karasutk.gui.texture;
 abstract class AbstractContext {
 
     this(EventQueue eventQueue,
-            MeshFactory meshFactory,
             TextureFactory textureFactory) @safe @nogc nothrow {
         this.eventQueue_ = eventQueue;
-        this.meshFactory_ = meshFactory;
         this.textureFactory_ = textureFactory;
     }
 
     @property @safe pure nothrow @nogc {
         EventQueue eventQueue() {return eventQueue_;}
-        MeshFactory meshFactory() {return meshFactory_;}
         TextureFactory textureFactory() {return textureFactory_;}
     }
 
@@ -40,7 +37,6 @@ abstract class AbstractContext {
 
 private:
     EventQueue eventQueue_;
-    MeshFactory meshFactory_;
     TextureFactory textureFactory_;
 }
 

@@ -21,7 +21,6 @@ class SdlContext : AbstractContext {
 
     this(SDL_Window* window) @safe {
         super(new SdlEventQueue(),
-                new SdlMeshFactory(),
                 new SdlTextureFactory());
         this.window_ = window;
     }
