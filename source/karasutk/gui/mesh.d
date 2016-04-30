@@ -58,12 +58,15 @@ alias Vertices(V) = Buffer!V;
 /// indices array
 alias Indices(I) = Buffer!I;
 
+/// is index type?
+enum isIndex(T) = isIntegral!T && isUnsigned!T;
+
 /// point indices buffer 
 alias Points(T) = Indices!T;
 
 /// line index
 struct Line(T) {
-    static assert(isIntegral!T);
+    static assert(isIndex!T);
 align(1):
     T p1;
     T p2;
@@ -74,7 +77,7 @@ alias Lines(T) = Indices!(Line!T);
 
 /// triangle index
 struct Triangle(T) {
-    static assert(isIntegral!T);
+    static assert(isIndex!T);
 align(1):
     T p1;
     T p2;
@@ -126,7 +129,8 @@ import karasutk.gui.sdl.mesh : SdlMesh;
 alias Mesh = SdlMesh;
 
 /// make mesh object
-Mesh!(V, F) makeMesh(V, F)(Vertices!V vertices, Indices!F indices) {
+Mesh!(V, F) makeMesh(V, F)(
+        const(Buffer!V) vertices, const(Buffer!F) indices) {
     return new Mesh!(V, F)(vertices, indices);
 }
 

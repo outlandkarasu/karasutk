@@ -119,7 +119,7 @@ private:
 /// mesh class for SDL
 class SdlMesh(V, F) : AbstractMesh!(F) {
 
-    this(const(Vertices!V) vertices, const(Indices!F) indices) {
+    this(const(Buffer!V) vertices, const(Buffer!F) indices) {
         // create VAO
         assert(vao_ is null);
         vao_ = new VertexArrayObject();
