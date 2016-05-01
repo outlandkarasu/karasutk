@@ -7,33 +7,32 @@
 
 module karasutk.gui.sdl.shader;
 
+import std.traits :
+    Fields,
+    FieldNameTuple,
+    isStaticArray,
+    isArray;
 import karasutk.gui.shader;
 import karasutk.gui.sdl.context : SdlContext;
 import karasutk.gui.sdl.gl : GlException, checkGlError;
 import karasutk.gui.sdl.texture : SdlGpuTexture2d;
+import gl3n.linalg : mat4;
 
 import derelict.opengl3.gl3;
 
-class SdlShader : AbstractShader {
+class SdlShader(P) : AbstractShader!P {
 
     this(SdlContext context, ShaderSource source) {
         this.source_ = source;
         programId_ = compileProgram(source_);
-        texLocation_ = glGetUniformLocation(programId_, "tex");
-        modelLocation_ = glGetUniformLocation(programId_, "M");
-        viewLocation_ = glGetUniformLocation(programId_, "V");
-        projectionLocation_ = glGetUniformLocation(programId_, "P");
-        mvpLocation_ = glGetUniformLocation(programId_, "MVP");
+
+        foreach(i, name; PARAMETER_NAMES) {
+            locations_[i] = glGetUniformLocation(programId_, name);
+        }
     }
 
     ~this() @nogc nothrow {
         glDeleteProgram(programId_);
-        programId_ = 0;
-        texLocation_ = -1;
-        modelLocation_ = -1;
-        viewLocation_ = -1;
-        projectionLocation_ = -1;
-        mvpLocation_ = -1;
     }
 
     /// do process during use program.
@@ -45,38 +44,50 @@ class SdlShader : AbstractShader {
 
 private:
 
-    void bindParameters(ShaderParameters params) const {
-        bindTexture(params.texture);
-        bindCamera(params.model, params.camera);
-    }
+    alias PARAMETER_NAMES = FieldNameTuple!P;
+    alias PARAMETER_TYPES = Fields!P;
 
-    void bindTexture(SdlGpuTexture2d!Rgb texture) const {
-        if(!texture) {
-            return;
+    void bindParameters(ref const(ShaderParameters) params) const {
+        foreach(i, name; PARAMETER_NAMES) {
+            auto loc = locations_[i];
+            alias FieldType = PARAMETER_TYPES[i];
+
+            enum valueName = "params." ~ name;
+            GLenum texIndex = 0;
+
+            static if(is(FieldType : mat4)) {
+                bindMatrix(loc, mixin(valueName));
+            } else static if(is(FieldType P : SdlGpuTexture2d!P)) {
+                bindTexture(loc, texIndex, mixin(valueName));
+                ++texIndex;
+            } else {
+                static assert(0, valueName ~ " unsupported type: " ~ FieldType.stringof);
+            }
+            checkGlError();
         }
-
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, texture.id);
-        glUniform1i(texLocation_, 0);
-        checkGlError();
     }
 
-    void bindCamera(ref const mat4 model, ref const Camera camera) const {
-        glUniformMatrix4fv(modelLocation_, 1, GL_TRUE, model.value_ptr);
-        glUniformMatrix4fv(viewLocation_, 1, GL_TRUE, camera.view.value_ptr);
-        glUniformMatrix4fv(projectionLocation_, 1, GL_TRUE, camera.projection.value_ptr);
-
-        immutable mvp = camera.projection * camera.view * model;
-        glUniformMatrix4fv(mvpLocation_, 1, GL_TRUE, mvp.value_ptr);
+    const @nogc nothrow {
+        void bindMatrix(GLint loc, ref const(mat4) m) {
+            glUniformMatrix4fv(loc, 1, GL_TRUE, m.value_ptr);
+        }
+        void bindTexture(P)(
+                GLint loc,
+                GLenum texIndex,
+                const(SdlGpuTexture2d!P) texture) {
+            if(!texture) {
+                return;
+            }
+    
+            glActiveTexture(GL_TEXTURE0 + texIndex);
+            glBindTexture(GL_TEXTURE_2D, texture.id);
+            glUniform1i(loc, texIndex);
+        }
     }
 
     ShaderSource source_;
     GLuint programId_;
-    GLint texLocation_ = -1;
-    GLint modelLocation_ = -1;
-    GLint viewLocation_ = -1;
-    GLint projectionLocation_ = -1;
-    GLint mvpLocation_ = -1;
+    GLint[FieldNameTuple!(P).length] locations_;
 }
 
 /**
