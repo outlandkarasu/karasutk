@@ -5,7 +5,7 @@
  *  License: BSL-1.0
  */
 
-module karasutk.gui.sdl;
+module karasutk.gui.sdl.utils;
 
 import std.string : fromStringz;
 import std.format : format;
