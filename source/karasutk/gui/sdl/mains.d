@@ -14,6 +14,7 @@ import std.string : toStringz;
 import derelict.sdl2.sdl;
 import derelict.opengl3.gl3 : DerelictGL3;
 import karasutk.dbg : dwritefln;
+import karasutk.gui.sdl.context : SdlContext;
 import karasutk.gui.sdl.utils : enforceSdl;
 import karasutk.gui.sdl.window : SdlWindow;
 
@@ -36,10 +37,6 @@ void sdlDoGuiMain(F)(
     enforceSdl(SDL_Init(SDL_INIT_EVERYTHING) == 0);
     scope(exit) SDL_Quit();
 
-    // set up OpenGL
-    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-
     // create the main window
     auto window = enforceSdl(SDL_CreateWindow(
         toStringz(options.windowTitle),
@@ -52,16 +49,14 @@ void sdlDoGuiMain(F)(
     auto sdlWindow = new SdlWindow(window);
 
     // create the OpenGL context.
-    auto context = enforceSdl(SDL_GL_CreateContext(window));
-    scope(exit) SDL_GL_DeleteContext(context);
+    scope context = new SdlContext(window);
 
     // enable OpenGL3
     DerelictGL3.reload();
     dwritefln("OpenGL version: %s", DerelictGL3.loadedVersion);
 
-    auto app = new SdlContext();
     try {
-        mainFunction(app, sdlWindow);
+        mainFunction(context, sdlWindow);
     } catch(Throwable e) {
         import std.stdio;
         stderr.writefln("error: %s", e);
