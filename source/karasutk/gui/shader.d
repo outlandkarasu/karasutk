@@ -19,17 +19,11 @@ struct ShaderSource {
     string fragmentShader;
 }
 
-/// shader parameters
-struct ShaderParameters {
-    GpuTexture2d!Rgb texture;
-    Camera camera;
-    mat4 model;
-}
-
 /// shader placeholder
-interface AbstractShader {
+interface AbstractShader(P) {
 
-    alias ParametersBinder = void delegate(ShaderParameters);
+    alias ShaderParameters = P;
+    alias ParametersBinder = void delegate(ref const(ShaderParameters));
 
     /// do process during use program.
     void duringUse(void delegate(ParametersBinder) dg) const;
@@ -39,7 +33,7 @@ import karasutk.gui.sdl.shader : SdlShader;
 alias Shader = SdlShader;
 
 /// helper function.
-Shader makeShader(Context context, ShaderSource source) {
-    return new Shader(context, source);
+Shader!P makeShader(P)(Context context, ShaderSource source) {
+    return new Shader!P(context, source);
 }
 
