@@ -10,6 +10,7 @@ module karasutk.gui.mains;
 import std.traits : isCallable, isImplicitlyConvertible, Parameters;
 
 import karasutk.gui.context;
+import karasutk.gui.event;
 import karasutk.gui.window;
 
 /**
@@ -33,11 +34,17 @@ struct GuiOptions {
     bool fullScreenDesktop = false;
 }
 
+/// GUI application environment.
+struct GuiEnvironment {
+    Context context;
+    Window mainWindow;
+    EventQueue eventQueue;
+}
+
 /// main function type.
 enum isMainFunction(F)
     = isCallable!F
-        && isImplicitlyConvertible!(Parameters!(F)[0], Context)
-        && isImplicitlyConvertible!(Parameters!(F)[1], Window);
+        && isImplicitlyConvertible!(Parameters!(F)[0], GuiEnvironment);
 
 import karasutk.gui.sdl.mains : sdlDoGuiMain;
 alias doGuiMain = sdlDoGuiMain;

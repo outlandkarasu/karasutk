@@ -14,6 +14,7 @@ import derelict.sdl2.sdl;
 import derelict.opengl3.gl3 : DerelictGL3;
 import karasutk.dbg : dwritefln;
 import karasutk.gui.sdl.context : SdlContext;
+import karasutk.gui.sdl.event : SdlEventQueue;
 import karasutk.gui.sdl.utils : enforceSdl;
 import karasutk.gui.sdl.window : SdlWindow;
 
@@ -45,6 +46,7 @@ void sdlDoGuiMain(F)(
 
     // call main function.
     scope context = new SdlContext();
-    mainFunction(context, window);
+    scope eventQueue = new SdlEventQueue();
+    mainFunction(GuiEnvironment(context, window, eventQueue));
 }
 
