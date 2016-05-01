@@ -78,12 +78,6 @@ interface AbstractMesh(F) {
     void draw();
 }
 
-struct VertexAttributes {
-    float[3] position;
-    float[3] color;
-    float[2] uv;
-}
-
 import karasutk.gui.sdl.mesh : SdlMesh;
 alias Mesh = SdlMesh;
 
