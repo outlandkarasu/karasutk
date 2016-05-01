@@ -8,6 +8,7 @@
 module karasutk.gui.texture;
 
 import std.experimental.allocator.mallocator : Mallocator;
+import karasutk.gui.context;
 
 /// RGB color structure
 struct Rgb {
@@ -103,7 +104,6 @@ abstract class AbstractTexture2d(P) {
         return result;
     }
 
-
 private:
     Pixel[] pixels_;
     size_t width_;
@@ -113,4 +113,9 @@ private:
 import karasutk.gui.sdl.texture : SdlTexture2d, SdlGpuTexture2d;
 alias Texture2d = SdlTexture2d;
 alias GpuTexture2d = SdlGpuTexture2d;
+
+/// helper function.
+GpuTexture2d!P makeGpuTexture(P)(Context context, Texture2d!(P) texture) {
+    return new GpuTexture2d!P(context, texture);
+}
 
