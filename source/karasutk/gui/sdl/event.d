@@ -10,6 +10,7 @@ module karasutk.gui.sdl.event;
 import karasutk.gui.event;
 
 import karasutk.gui.sdl.keycode;
+import karasutk.gui.sdl.utils : enforceSdl;
 
 import derelict.sdl2.sdl;
 
@@ -36,6 +37,12 @@ class SdlEventQueue : AbstractEventQueue {
         }
 
         return EventResult.NOT_EMPTY;
+    }
+
+    override void quit() {
+        SDL_Event event;
+        event.type = SDL_QUIT;
+        enforceSdl(SDL_PushEvent(&event));
     }
 }
 

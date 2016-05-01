@@ -15,6 +15,7 @@ import derelict.sdl2.sdl;
 import derelict.opengl3.gl3 : DerelictGL3;
 import karasutk.dbg : dwritefln;
 import karasutk.gui.sdl.utils : enforceSdl;
+import karasutk.gui.sdl.window : SdlWindow;
 
 /**
  *  Run a dg during GUI.
@@ -23,7 +24,9 @@ import karasutk.gui.sdl.utils : enforceSdl;
  *      options = GUI options.
  *      mainFunction = the main function or delegate.
  */
-void doGuiMain(F)(ref const(GuiOptions) options, F mainFunction) if(isMainFunction!F) {
+void sdlDoGuiMain(F)(
+        ref const(GuiOptions) options,
+        F mainFunction) if(isMainFunction!F) {
     DerelictSDL2.load();
     scope(exit) DerelictSDL2.unload();
 
@@ -46,6 +49,7 @@ void doGuiMain(F)(ref const(GuiOptions) options, F mainFunction) if(isMainFuncti
         options.windowHeight,
         SDL_WINDOW_OPENGL | options.windowFlags));
     scope(exit) SDL_DestroyWindow(window);
+    auto sdlWindow = new SdlWindow(window);
 
     // create the OpenGL context.
     auto context = enforceSdl(SDL_GL_CreateContext(window));
@@ -55,9 +59,9 @@ void doGuiMain(F)(ref const(GuiOptions) options, F mainFunction) if(isMainFuncti
     DerelictGL3.reload();
     dwritefln("OpenGL version: %s", DerelictGL3.loadedVersion);
 
-    auto app = new SdlContext(window);
+    auto app = new SdlContext();
     try {
-        mainFunction(app);
+        mainFunction(app, sdlWindow);
     } catch(Throwable e) {
         import std.stdio;
         stderr.writefln("error: %s", e);

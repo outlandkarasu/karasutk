@@ -76,6 +76,11 @@ abstract class AbstractEventQueue {
         if(quitEvent_) {quitEvent_(event);}
     }
 
+    /**
+     *  post a quit message.
+     */
+    abstract void quit();
+
 private:
     EventHandler!KeyEvent keyEvent_;
     EventHandler!QuitEvent quitEvent_;
