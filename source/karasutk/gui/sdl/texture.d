@@ -13,6 +13,7 @@ import std.experimental.allocator.mallocator : Mallocator;
 
 import derelict.opengl3.gl3;
 
+import karasutk.gui.sdl.context : SdlContext;
 import karasutk.gui.sdl.gl : checkGlError;
 
 class SdlTexture2d(P) : AbstractTexture2d!(P) {
@@ -33,7 +34,7 @@ class SdlTexture2d(P) : AbstractTexture2d!(P) {
 
 class SdlGpuTexture2d(P) {
 
-    this(SdlTexture2d!P t)
+    this(SdlContext context, SdlTexture2d!P t)
     out {
         assert(textureId_ != 0);
     } body {

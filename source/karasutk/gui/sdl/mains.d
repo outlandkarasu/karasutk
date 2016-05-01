@@ -37,16 +37,17 @@ void sdlDoGuiMain(F)(
     enforceSdl(SDL_Init(SDL_INIT_EVERYTHING) == 0);
     scope(exit) SDL_Quit();
 
+    scope context = new SdlContext();
+
     // create main window.
-    scope window = new SdlWindow(options);
+    scope window = new SdlWindow(context, options);
 
     // enable OpenGL3
     DerelictGL3.reload();
     dwritefln("OpenGL version: %s", DerelictGL3.loadedVersion);
 
     // call main function.
-    scope context = new SdlContext();
-    scope eventQueue = new SdlEventQueue();
+    scope eventQueue = new SdlEventQueue(context);
     mainFunction(GuiEnvironment(context, window, eventQueue));
 }
 

@@ -9,12 +9,16 @@ module karasutk.gui.sdl.event;
 
 import karasutk.gui.event;
 
+import karasutk.gui.sdl.context : SdlContext;
 import karasutk.gui.sdl.keycode;
 import karasutk.gui.sdl.utils : enforceSdl;
 
 import derelict.sdl2.sdl;
 
 class SdlEventQueue : AbstractEventQueue {
+
+    /// constructor with context
+    this(SdlContext context) {}
 
     override EventResult process() @system {
         SDL_Event event;

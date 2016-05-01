@@ -10,6 +10,7 @@ module karasutk.gui.sdl.window;
 import std.string : toStringz;
 import karasutk.gui.mains : GuiOptions;
 import karasutk.gui.window : AbstractWindow;
+import karasutk.gui.sdl.context : SdlContext;
 import karasutk.gui.sdl.utils : enforceSdl;
 import derelict.sdl2.sdl;
 import derelict.opengl3.gl3;
@@ -17,7 +18,7 @@ import derelict.opengl3.gl3;
 /// SDL window class.
 class SdlWindow : AbstractWindow {
 
-    this(ref const(GuiOptions) opts) {
+    this(SdlContext context, ref const(GuiOptions) opts) {
         // create the main window
         this.window_ = enforceSdl(SDL_CreateWindow(
             toStringz(opts.windowTitle),

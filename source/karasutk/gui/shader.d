@@ -8,10 +8,9 @@
 module karasutk.gui.shader;
 
 import std.stdio : writefln;
-
-import karasutk.gui.camera: Camera;
+import karasutk.gui.camera : Camera;
+import karasutk.gui.context : Context;
 import karasutk.gui.texture : GpuTexture2d, Rgb;
-
 import gl3n.linalg : mat4;
 
 /// shader sources
@@ -38,4 +37,9 @@ interface AbstractShader {
 
 import karasutk.gui.sdl.shader : SdlShader;
 alias Shader = SdlShader;
+
+/// helper function.
+Shader makeShader(Context context, ShaderSource source) {
+    return new Shader(context, source);
+}
 

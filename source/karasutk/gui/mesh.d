@@ -7,9 +7,9 @@
 
 module karasutk.gui.mesh;
 
-import karasutk.gui.buffer : Buffer;
-
 import std.traits : isIntegral, isUnsigned;
+import karasutk.gui.buffer : Buffer;
+import karasutk.gui.context : Context;
 
 /// vertices array
 alias Vertices(V) = Buffer!V;
@@ -89,7 +89,7 @@ alias Mesh = SdlMesh;
 
 /// make mesh object
 Mesh!(V, F) makeMesh(V, F)(
-        const(Buffer!V) vertices, const(Buffer!F) indices) {
-    return new Mesh!(V, F)(vertices, indices);
+        Context context, const(Buffer!V) vertices, const(Buffer!F) indices) {
+    return new Mesh!(V, F)(context, vertices, indices);
 }
 
