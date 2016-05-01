@@ -11,8 +11,8 @@ module karasutk.gui.window;
 abstract class AbstractWindow {
 
     @property const {
-        uint windowWidth();
-        uint windowHeight();
+        uint width();
+        uint height();
     }
 
     /// draw next frame
