@@ -44,8 +44,8 @@ enum GlType(T : ushort) = GL_UNSIGNED_SHORT;
 enum GlType(T : int) = GL_INT;
 enum GlType(T : uint) = GL_UNSIGNED_INT;
 
-/// OpenGL buffer data class
-class BufferData(GLenum Target, T) {
+/// abstract GPU buffer
+class AbstractBuffer(GLenum Target, T) {
 
     alias Component = T;
 
@@ -68,6 +68,18 @@ class BufferData(GLenum Target, T) {
         glBindBuffer(Target, 0);
     }
 
+    @property size_t length() const pure nothrow @nogc {
+        return length_;
+    }
+
+private:
+    size_t length_;
+    GLuint id_;
+}
+
+/// OpenGL buffer data class
+class BufferData(GLenum Target, T) : AbstractBuffer!(Target, T) {
+
     /// trasfer buffer data to GPU.
     void transfer(const(Component)[] data) {
         bind();
@@ -82,13 +94,35 @@ class BufferData(GLenum Target, T) {
 
         length_ = data.length;
     }
+}
 
-    @property size_t length() const @safe pure nothrow @nogc {
-        return length_;
+/// OpenGL buffer data class
+class MappedBufferData(GLenum Target, T) : AbstractBuffer!(Target, T) {
+    /// allocate buffer data at GPU.
+    void allocate(size_t length) {
+        bind();
+        scope(exit) unbind();
+
+        glBufferData(
+            Target,
+            length * Component.sizeof,
+            null,
+            GL_STATIC_DRAW);
+        checkGlError();
+        length_ = data.length;
     }
 
-private:
-    size_t length_;
-    GLuint id_;
+    /// mapping entire buffer and edit data
+    void duringMap(F)(scope F f) {
+        bind();
+        scope(exit) unbind();
+
+        auto p = glMapBuffer(Target, GL_WRITE_ONLY);
+        checkGlError();
+        scope(exit) glUnmapBuffer(Target);
+
+        // edit data by parameter function
+        f((cast(Component*)p)[0 .. length]);
+    }
 }
 

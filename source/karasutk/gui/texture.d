@@ -13,17 +13,17 @@ import karasutk.gui.context;
 /// RGB color structure
 struct Rgb {
 align(1):
-    ubyte b;
-    ubyte g;
     ubyte r;
+    ubyte g;
+    ubyte b;
 }
 
 /// RGBA color structure
 struct Rgba {
 align(1):
-    ubyte b;
-    ubyte g;
     ubyte r;
+    ubyte g;
+    ubyte b;
     ubyte a;
 }
 

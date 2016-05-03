@@ -32,31 +32,20 @@ class SdlTexture2d(P) : AbstractTexture2d!(P) {
     }
 }
 
-class SdlGpuTexture2d(P) {
+class AbstractSdlGpuTexture2d(P) {
 
-    this(SdlContext context, SdlTexture2d!P t)
+    enum PIXEL_TYPE = GL_UNSIGNED_BYTE;
+    static if(is(P == Rgb)) {
+        enum PIXEL_FORMAT = GL_RGB;
+    } else static if(is(P == Rgba)) {
+        enum PIXEL_FORMAT = GL_RGBA;
+    }
+
+    this()
     out {
         assert(textureId_ != 0);
     } body {
         glGenTextures(1, &textureId_);
-        checkGlError();
-
-        // transfer pixel data
-        bind();
-        scope(exit) unbind();
-
-        glTexImage2D(
-                GL_TEXTURE_2D,
-                0,
-                PIXEL_FORMAT,
-                cast(GLsizei) t.width,
-                cast(GLsizei) t.height,
-                0,
-                PIXEL_FORMAT,
-                PIXEL_TYPE,
-                cast(const(GLvoid)*) t.ptr);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         checkGlError();
     }
 
@@ -86,13 +75,33 @@ class SdlGpuTexture2d(P) {
     }
 
 private:
-    enum PIXEL_TYPE = GL_UNSIGNED_BYTE;
-    static if(is(P == Rgb)) {
-        enum PIXEL_FORMAT = GL_RGB;
-    } else static if(is(P == Rgba)) {
-        enum PIXEL_FORMAT = GL_RGBA;
-    }
-
     GLuint textureId_;
+}
+
+class SdlGpuTexture2d(P) : AbstractSdlGpuTexture2d!(P) {
+
+    this(SdlContext context, SdlTexture2d!P t) {
+        super();
+
+        // transfer pixel data
+        bind();
+        scope(exit) unbind();
+
+        glTexImage2D(
+                GL_TEXTURE_2D,
+                0,
+                PIXEL_FORMAT,
+                cast(GLsizei) t.width,
+                cast(GLsizei) t.height,
+                0,
+                PIXEL_FORMAT,
+                PIXEL_TYPE,
+                cast(const(GLvoid)*) t.ptr);
+        checkGlError();
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        checkGlError();
+    }
 }
 
