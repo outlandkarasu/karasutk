@@ -68,8 +68,9 @@ class AbstractBuffer(GLenum Target, T) {
         glBindBuffer(Target, 0);
     }
 
-    @property size_t length() const pure nothrow @nogc {
-        return length_;
+    @property const pure nothrow @nogc {
+        size_t length() {return length_;}
+        GLuint id() {return id_;}
     }
 
 private:
@@ -107,13 +108,13 @@ class MappedBufferData(GLenum Target, T) : AbstractBuffer!(Target, T) {
             Target,
             length * Component.sizeof,
             null,
-            GL_STATIC_DRAW);
+            GL_DYNAMIC_DRAW);
         checkGlError();
-        length_ = data.length;
+        length_ = length;
     }
 
     /// mapping entire buffer and edit data
-    void duringMap(F)(scope F f) {
+    void duringMap(scope void delegate(T[]) dg) {
         bind();
         scope(exit) unbind();
 
@@ -122,7 +123,7 @@ class MappedBufferData(GLenum Target, T) : AbstractBuffer!(Target, T) {
         scope(exit) glUnmapBuffer(Target);
 
         // edit data by parameter function
-        f((cast(Component*)p)[0 .. length]);
+        dg((cast(Component*)p)[0 .. length]);
     }
 }
 
