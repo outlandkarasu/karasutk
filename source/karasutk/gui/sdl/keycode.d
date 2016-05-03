@@ -13,5 +13,6 @@ import derelict.sdl2.sdl;
 
 enum SdlKeyCode {
     ESC = SDLK_ESCAPE,
+    ENTER = SDLK_RETURN,
 }
 

@@ -15,7 +15,7 @@ import std.traits :
 import karasutk.gui.shader;
 import karasutk.gui.sdl.context : SdlContext;
 import karasutk.gui.sdl.gl : GlException, checkGlError;
-import karasutk.gui.sdl.texture : SdlGpuTexture2d;
+import karasutk.gui.sdl.texture : AbstractSdlGpuTexture2d;
 import gl3n.linalg : mat4;
 
 import derelict.opengl3.gl3;
@@ -57,7 +57,7 @@ private:
 
             static if(is(FieldType : mat4)) {
                 bindMatrix(loc, mixin(valueName));
-            } else static if(is(FieldType P : SdlGpuTexture2d!P)) {
+            } else static if(is(FieldType P : AbstractSdlGpuTexture2d!P)) {
                 bindTexture(loc, texIndex, mixin(valueName));
                 ++texIndex;
             } else {
@@ -74,7 +74,7 @@ private:
         void bindTexture(P)(
                 GLint loc,
                 GLenum texIndex,
-                const(SdlGpuTexture2d!P) texture) {
+                const(AbstractSdlGpuTexture2d!P) texture) {
             if(!texture) {
                 return;
             }
