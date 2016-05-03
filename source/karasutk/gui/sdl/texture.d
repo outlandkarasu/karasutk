@@ -118,30 +118,6 @@ class SdlMappedGpuTexture2d(P) : AbstractSdlGpuTexture2d!(P) {
         super(width, height);
         buffer_ = new Buffer();
         buffer_.allocate(width * height);
-
-        // buffer bind to texture
-        glBindBuffer(GL_PIXEL_UNPACK_BUFFER, buffer_.id);
-        checkGlError();
-        scope(exit) glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0); 
-
-        bind();
-        scope(exit) unbind();
-
-        glTexImage2D(
-                GL_TEXTURE_2D,
-                0,
-                PIXEL_FORMAT,
-                cast(GLsizei) width,
-                cast(GLsizei) height,
-                0,
-                PIXEL_FORMAT,
-                PIXEL_TYPE,
-                null);
-        checkGlError();
-
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        checkGlError();
     }
 
     ~this() {
@@ -168,17 +144,45 @@ private:
     int opApplyByPixel(F)(F dg) {
         int result = 0;
         buffer_.duringMap((pixels) {
-            result = ByPixel!P().opApply(dg);
+            result = ByPixel!P(pixels, width, height).opApply(dg);
         });
+        transferToGpu();
         return result;
     }
 
     int opApplyByLine(F)(F dg) {
         int result = 0;
         buffer_.duringMap((pixels) {
-            result = ByLine!P().opApply(dg);
+            result = ByLine!P(pixels, width, height).opApply(dg);
         });
+        transferToGpu();
         return result;
+    }
+
+    void transferToGpu() {
+        // buffer bind to texture
+        glBindBuffer(GL_PIXEL_UNPACK_BUFFER, buffer_.id);
+        checkGlError();
+        scope(exit) glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0); 
+
+        bind();
+        scope(exit) unbind();
+
+        glTexImage2D(
+                GL_TEXTURE_2D,
+                0,
+                PIXEL_FORMAT,
+                cast(GLsizei) width,
+                cast(GLsizei) height,
+                0,
+                PIXEL_FORMAT,
+                PIXEL_TYPE,
+                null);
+        checkGlError();
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        checkGlError();
     }
 
     alias Buffer = MappedBufferData!(GL_PIXEL_PACK_BUFFER, P);

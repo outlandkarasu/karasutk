@@ -151,10 +151,10 @@ abstract class AbstractTexture2d(P) {
 
 private:
     int opApplyByPixel(F)(F dg) {
-        return ByPixel!Pixel().opApply(dg);
+        return ByPixel!Pixel(pixels_, width_, height_).opApply(dg);
     }
     int opApplyByLine(F)(F dg) {
-        return ByLine!Pixel().opApply(dg);
+        return ByLine!Pixel(pixels_, width_, height).opApply(dg);
     }
 
     Pixel[] pixels_;
