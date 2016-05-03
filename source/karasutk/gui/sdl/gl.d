@@ -13,8 +13,6 @@ import std.stdio : writefln;
 
 import derelict.opengl3.gl3;
 
-import karasutk.gui.gpu : GpuReleasableAsset;
-
 /// OpenGL related exception.
 class GlException : Exception {
     @nogc @safe pure nothrow this(string msg, string file = __FILE__, size_t line = __LINE__, Throwable next = null) {
@@ -46,15 +44,8 @@ enum GlType(T : ushort) = GL_UNSIGNED_SHORT;
 enum GlType(T : int) = GL_INT;
 enum GlType(T : uint) = GL_UNSIGNED_INT;
 
-abstract class BindableObject : GpuReleasableAsset {
-
-    ~this() nothrow @nogc {releaseFromGpu();}
-    abstract void bind();
-    abstract void unbind() nothrow @nogc;
-}
-
 /// OpenGL buffer data class
-class BufferData(GLenum Target, T) : BindableObject {
+class BufferData(GLenum Target, T) {
 
     alias Component = T;
 
@@ -64,22 +55,16 @@ class BufferData(GLenum Target, T) : BindableObject {
         checkGlError();
     }
 
-    /// ditto
-    void releaseFromGpu() nothrow @nogc {
-        if(id_ != 0) {
-            glDeleteBuffers(1, &id_);
-            id_ = 0;
-        }
-    }
+    ~this() nothrow @nogc {glDeleteBuffers(1, &id_);}
 
     /// bind this buffer
-    override void bind() {
+    void bind() {
         glBindBuffer(Target, id_);
         checkGlError();
     }
 
     /// unbind buffer
-    override void unbind() {
+    void unbind() {
         glBindBuffer(Target, 0);
     }
 
@@ -104,66 +89,6 @@ class BufferData(GLenum Target, T) : BindableObject {
 
 private:
     size_t length_;
-    GLuint id_;
-}
-
-/// 2D texture class
-class Texture2d : BindableObject {
-
-    struct Pixel(T) {
-        T r;
-        T g;
-        T b;
-    }
-
-    /// default constructor
-    this() {
-        glGenTextures(1, &id_);
-        checkGlError();
-    }
-
-    override void bind() {
-        glBindTexture(GL_TEXTURE_2D, id_);
-        checkGlError();
-    }
-
-    override void unbind() nothrow @nogc {
-        glBindTexture(GL_TEXTURE_2D, 0);
-    }
-
-    void releaseFromGpu() nothrow @nogc {
-        if(id_ != 0) {
-            glDeleteTextures(1, &id_);
-            id_ = 0;
-        }
-    }
-
-    /**
-     *  transfer RGB pixel data to GPU.
-     *
-     *  Params:
-     *      width = texture pixel width
-     *      height = texture pixel height
-     *      pixels = pixel data
-     */
-    void image(T)(GLsizei width, GLsizei height, const(Pixel!(T))[] pixels)
-    in {
-        assert(width * height == pixels.length);
-    } body {
-        bind();
-        scope(exit) unbind();
-
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, pixels.ptr);
-        checkGlError();
-
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        checkGlError();
-
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        checkGlError();
-    }
-
-private:
     GLuint id_;
 }
 
