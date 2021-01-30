@@ -16,6 +16,8 @@ import bindbc.sdl :
     SDL_PollEvent,
     SDL_Window;
 
+import karasutk.sdl.window : Window;
+
 /**
 Event handlers.
 */
@@ -70,7 +72,13 @@ private:
 
     static Result callHandler(scope Handler handler, ref const(SDL_Event) event)
     {
-        return handler ? handler(event) : Result.continueLoop;
+        if (handler)
+        {
+            return handler(event);
+        }
+
+        // default handler.
+        return (event.type == SDL_QUIT) ? Result.quitLoop : Result.continueLoop;
     }
 }
 
@@ -115,9 +123,9 @@ void runEventLoop()(auto scope ref Window window, auto scope ref EventHandlers h
         }
 
         // draw a frame.
-        if (handlers.draw)
+        if (handlers.onDraw)
         {
-            handlers.draw();
+            handlers.onDraw();
             SDL_GL_SwapWindow(window.ptr);
         }
 
