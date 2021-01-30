@@ -9,5 +9,6 @@
 	"homepage": "https://github.com/outlandkarasu/karasutk",
 	"license": "BSL-1.0",
 	"name": "karasutk",
-	"targetType": "staticLibrary"
+	"targetType": "staticLibrary",
+	"versions": ["SDL2012"]
 }
