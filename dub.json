@@ -1,0 +1,13 @@
+{
+	"authors": [
+		"outland.karasu@gmail.com"
+	],
+	"dependencies": {
+		"bindbc-sdl": "0.19.2"
+	},
+	"description": "the Karasu tool kit library",
+	"homepage": "https://github.com/outlandkarasu/karasutk",
+	"license": "BSL-1.0",
+	"name": "karasutk",
+	"targetType": "staticLibrary"
+}
