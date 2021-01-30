@@ -36,8 +36,7 @@ int enforceSDL(string file = __FILE__, size_t line = __LINE__)(int result)
 {
     if (result != 0)
     {
-        immutable message = fromStringz(SDL_GetError()).idup;
-        throw new SDLException(message, file, line);
+        throw createCurrentError(file, line);
     }
 
     return result;
@@ -59,10 +58,38 @@ P enforceSDL(string file = __FILE__, size_t line = __LINE__, P)(scope P result) 
 {
     if (!result)
     {
-        immutable message = fromStringz(SDL_GetError()).idup;
-        throw new SDLException(message, file, line);
+        throw createCurrentError(file, line);
     }
 
     return result;
+}
+
+/**
+Enforce SDL result.
+Params:
+    file = file name.
+    line = line no.
+    result = result flag.
+Returns:
+    result code.
+Throws:
+    SDLException if result is false.
+*/
+int enforceSDL(string file = __FILE__, size_t line = __LINE__)(bool result)
+{
+    if (!result)
+    {
+        throw createCurrentError(file, line);
+    }
+
+    return result;
+}
+
+private:
+
+SDLException createCurrentError(string file, size_t line) nothrow
+{
+    immutable message = fromStringz(SDL_GetError()).idup;
+    return new SDLException(message, file, line);
 }
 
