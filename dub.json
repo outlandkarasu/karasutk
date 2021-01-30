@@ -10,5 +10,5 @@
 	"license": "BSL-1.0",
 	"name": "karasutk",
 	"targetType": "staticLibrary",
-	"versions": ["SDL2012"]
+	"versions": ["SDL_2012"]
 }

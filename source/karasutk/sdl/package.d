@@ -7,4 +7,5 @@ module karasutk.sdl;
 
 public import karasutk.sdl.exception;
 public import karasutk.sdl.initialize;
+public import karasutk.sdl.window;
 
