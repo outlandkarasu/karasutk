@@ -103,6 +103,11 @@ struct Window
 
     @disable this();
 
+    @property SDL_Window* ptr() @nogc nothrow pure scope return
+    {
+        return payload_.refCountedPayload.window;
+    }
+
 private:
 
     this()(SDL_Window* window) @nogc nothrow scope
