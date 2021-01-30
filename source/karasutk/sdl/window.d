@@ -18,7 +18,9 @@ import bindbc.sdl :
     SDL_CreateWindow,
     SDL_DestroyWindow,
     SDL_Window,
-    Uint32;
+    SDL_WindowFlags;
+
+import karasutk.sdl.exception : enforceSDL;
 
 /**
 Window creation parameters.
@@ -36,9 +38,9 @@ struct WindowParameters
     bool borderless = false;
     bool resizable = false;
 
-    private @property Uint32 flags() @nogc nothrow pure @safe scope
+    private @property SDL_WindowFlags flags() const @nogc nothrow pure @safe scope
     {
-        Uint32 result = 0;
+        SDL_WindowFlags result = cast(SDL_WindowFlags) 0;
         result |= openGL ? SDL_WINDOW_OPENGL : 0;
         result |= vulkan ? SDL_WINDOW_VULKAN : 0;
         result |= visible ? SDL_WINDOW_SHOWN : 0;
@@ -96,12 +98,17 @@ struct Window
             parameters.w,
             parameters.h,
             parameters.flags));
-        return Window(Payload(window).refCounted);
+        return Window(window);
     }
 
     @disable this();
 
 private:
+
+    this()(SDL_Window* window) @nogc nothrow scope
+    {
+        this.payload_ = window;
+    }
 
     struct Payload
     {
