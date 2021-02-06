@@ -6,7 +6,9 @@ License: BSL-1.0
 module karasutk.sdl.window;
 
 import std.string : toStringz;
-import std.typecons : RefCounted, refCounted;
+import std.typecons :
+    RefCounted,
+    refCounted;
 
 import bindbc.sdl :
     SDL_WINDOW_BORDERLESS,
@@ -17,6 +19,8 @@ import bindbc.sdl :
     SDL_WINDOWPOS_UNDEFINED,
     SDL_CreateWindow,
     SDL_DestroyWindow,
+    SDL_TRUE,
+    SDL_Vulkan_GetInstanceExtensions,
     SDL_Window,
     SDL_WindowFlags;
 
@@ -106,6 +110,18 @@ struct Window
     @property SDL_Window* ptr() @nogc nothrow pure scope return
     {
         return payload_.refCountedPayload.window;
+    }
+
+    @property const(char)*[] vulkanInstanceExtensions()
+    {
+        // get extensions count.
+        uint count;
+        enforceSDL(SDL_Vulkan_GetInstanceExtensions(ptr, &count, null) == SDL_TRUE);
+
+        // read extensions.
+        auto extensions = new const(char)*[](count);
+        enforceSDL(SDL_Vulkan_GetInstanceExtensions(ptr, &count, extensions.ptr) == SDL_TRUE);
+        return extensions;
     }
 
 private:
