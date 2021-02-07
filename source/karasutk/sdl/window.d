@@ -21,6 +21,7 @@ import bindbc.sdl :
     SDL_DestroyWindow,
     SDL_TRUE,
     SDL_Vulkan_GetInstanceExtensions,
+    SDL_Vulkan_CreateSurface,
     SDL_Window,
     SDL_WindowFlags;
 
@@ -122,6 +123,15 @@ struct Window
         auto extensions = new const(char)*[](count);
         enforceSDL(SDL_Vulkan_GetInstanceExtensions(ptr, &count, extensions.ptr) == SDL_TRUE);
         return extensions;
+    }
+
+    void* vulkanCreateSurface(void* instance)
+    in (instance)
+    out (r; r)
+    {
+        void* surface;
+        enforceSDL(SDL_Vulkan_CreateSurface(ptr, instance, &surface) == SDL_TRUE);
+        return surface;
     }
 
 private:
